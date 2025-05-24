@@ -1,0 +1,143 @@
+import pygame
+import sys
+
+TILE_SIZE = 30
+SCREEN_COLOR = (0, 0, 0)
+PLAYER_COLOR = (255, 105, 180)
+TILE_COLOR = (255, 182, 193)
+POINT_COLOR = (255, 215, 0)
+FONT_COLOR = (255, 255, 255)
+
+MAX_LEVEL = 7
+class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.score = 0
+        self.lives = 3
+
+    def move(self, dx, dy, map_size):
+        new_x = self.x + dx
+        new_y = self.y + dy
+        if 0 <= new_x < map_size and 0 <= new_y < map_size:
+            self.x = new_x
+            self.y = new_y
+
+    def draw(self, screen):
+        pygame.draw.rect(
+            screen,
+            PLAYER_COLOR,
+            (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        )
+
+# --- Mapa ---
+class Map:
+    def __init__(self, level):
+        self.level = level
+        self.size = 3 + level - 1
+        self.grid = [[0] * self.size for _ in range(self.size)]
+        self.place_points()
+    
+    def place_points(self):
+        for y in range(self.size):
+            for x in range(self.size):
+                
+                if not (x == self.size // 2 and y == self.size // 2):
+                    self.grid[y][x] = 1 
+
+    def draw(self, screen):
+        for y, row in enumerate(self.grid):
+            for x, tile in enumerate(row):
+                if tile == 0:
+                    color = TILE_COLOR
+                elif tile == 1:
+                    color = POINT_COLOR
+                pygame.draw.rect(
+                    screen,
+                    color,
+                    pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                )
+class Game:
+    def __init__(self):
+        pygame.init()
+        self.level = 1
+        self.map = Map(self.level)
+        self.player = Player(self.map.size // 2, self.map.size // 2)
+        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
+        pygame.display.set_caption("PacWoman OOP")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont(None, 30)
+        self.running = True
+        self.game_over = False
+
+    def next_level(self):
+        self.level += 1
+        if self.level > MAX_LEVEL:
+            self.game_over = True
+            return
+        self.map = Map(self.level)
+        self.player.x = self.map.size // 2
+        self.player.y = self.map.size // 2
+        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+            if not self.game_over and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.next_level()
+                elif event.key == pygame.K_UP:
+                    self.player.move(0, -1, self.map.size)
+                elif event.key == pygame.K_DOWN:
+                    self.player.move(0, 1, self.map.size)
+                elif event.key == pygame.K_LEFT:
+                    self.player.move(-1, 0, self.map.size)
+                elif event.key == pygame.K_RIGHT:
+                    self.player.move(1, 0, self.map.size)
+
+    def update_game(self):
+        if self.game_over:
+            return
+        tile = self.map.grid[self.player.y][self.player.x]
+        if tile == 1:
+            self.player.score += 1
+            self.map.grid[self.player.y][self.player.x] = 0
+
+    def draw_ui(self):
+        score_text = self.font.render(
+            f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
+            True, FONT_COLOR
+        )
+        self.screen.blit(score_text, (10, 10))
+
+    def draw_game_over(self):
+        text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
+        self.screen.fill((0, 0, 0))
+        text_rect = text.get_rect(center=(self.map.size * TILE_SIZE // 2, self.map.size * TILE_SIZE // 2))
+        self.screen.blit(text, text_rect)
+
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update_game()
+
+            self.screen.fill(SCREEN_COLOR)
+            if self.game_over:
+                self.draw_game_over()
+            else:
+                self.map.draw(self.screen)
+                self.player.draw(self.screen)
+                self.draw_ui()
+
+            pygame.display.flip()
+            self.clock.tick(60)
+
+        pygame.quit()
+        sys.exit()
+
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
