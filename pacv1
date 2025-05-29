@@ -7,6 +7,8 @@ PLAYER_COLOR = (255, 105, 180)
 TILE_COLOR = (255, 182, 193)
 POINT_COLOR = (255, 215, 0)
 FONT_COLOR = (255, 255, 255)
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
 
 MAX_LEVEL = 7
 class Player:
@@ -23,11 +25,15 @@ class Player:
             self.x = new_x
             self.y = new_y
 
-    def draw(self, screen):
+    def draw(self, screen, offset_x, offset_y):
         pygame.draw.rect(
             screen,
             PLAYER_COLOR,
-            (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            (
+                offset_x + self.x * TILE_SIZE,
+                offset_y + self.y * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE)
         )
 
 # --- Mapa ---
@@ -45,7 +51,7 @@ class Map:
                 if not (x == self.size // 2 and y == self.size // 2):
                     self.grid[y][x] = 1 
 
-    def draw(self, screen):
+    def draw(self, screen, offset_x, offset_y):
         for y, row in enumerate(self.grid):
             for x, tile in enumerate(row):
                 if tile == 0:
@@ -55,15 +61,25 @@ class Map:
                 pygame.draw.rect(
                     screen,
                     color,
-                    pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                    pygame.Rect(
+                        offset_x + x * TILE_SIZE,
+                        offset_y + y * TILE_SIZE,
+                        TILE_SIZE, TILE_SIZE
+                    )
                 )
 class Game:
+    def calculate_offset(self):
+        self.map_pixel_size = self.map.size * TILE_SIZE
+        self.offset_x = (WINDOW_WIDTH - self.map_pixel_size) // 2
+        self.offset_y = (WINDOW_HEIGHT - self.map_pixel_size) // 2
+
     def __init__(self):
         pygame.init()
         self.level = 1
         self.map = Map(self.level)
+        self.calculate_offset()
         self.player = Player(self.map.size // 2, self.map.size // 2)
-        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 30)
@@ -78,7 +94,7 @@ class Game:
         self.map = Map(self.level)
         self.player.x = self.map.size // 2
         self.player.y = self.map.size // 2
-        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
+        self.calculate_offset()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -115,7 +131,7 @@ class Game:
     def draw_game_over(self):
         text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
         self.screen.fill((0, 0, 0))
-        text_rect = text.get_rect(center=(self.map.size * TILE_SIZE // 2, self.map.size * TILE_SIZE // 2))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         self.screen.blit(text, text_rect)
 
     def run(self):
@@ -127,8 +143,8 @@ class Game:
             if self.game_over:
                 self.draw_game_over()
             else:
-                self.map.draw(self.screen)
-                self.player.draw(self.screen)
+                self.map.draw(self.screen, self.offset_x, self.offset_y)
+                self.player.draw(self.screen, self.offset_x, self.offset_y)
                 self.draw_ui()
 
             pygame.display.flip()
