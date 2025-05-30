@@ -47,40 +47,38 @@ class Ghost:
     
     def move_towards_player(self, player, map_size):
         now = time.time()
-        if now - self.last_move_time < 0.5:  # porusza się co 0.5 sekundy
-            return
-        self.last_move_time = now
+        if now - self.last_move_time < 0.5:
+            return  
 
-    
-        directions = []
+        self.last_move_time = now  
 
-        if self.x < player.x:
-            directions.append((1, 0))   
-            directions.append((-1, 0))  
+        dx = player.x - self.x
+        dy = player.y - self.y
+        distance = abs(dx) + abs(dy)
 
-        if self.y < player.y:
-            directions.append((0, 1))   
-        elif self.y > player.y:
-            directions.append((0, -1))  
-
-    
-        random.shuffle(directions)
-
-        
-        other_directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        random.shuffle(other_directions)
-        for dir in other_directions:
-            if dir not in directions:
-                directions.append(dir)
-
-    
-        for dx, dy in directions:
-            new_x = self.x + dx
-            new_y = self.y + dy
-            if 0 <= new_x < map_size and 0 <= new_y < map_size:
-                self.x = new_x
-                self.y = new_y
-                break
+        if distance <= 3 or random.random() < 0.2:
+         
+            if abs(dx) > abs(dy):
+                step_x = 1 if dx > 0 else -1
+                new_x = self.x + step_x
+                if 0 <= new_x < map_size:
+                    self.x = new_x
+            elif dy != 0:
+                step_y = 1 if dy > 0 else -1
+                new_y = self.y + step_y
+                if 0 <= new_y < map_size:
+                    self.y = new_y
+        else:
+            
+            directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            random.shuffle(directions)
+            for dx, dy in directions:
+                new_x = self.x + dx
+                new_y = self.y + dy
+                if 0 <= new_x < map_size and 0 <= new_y < map_size:
+                    self.x = new_x
+                    self.y = new_y
+                    break
 
     def draw(self, screen, offset_x, offset_y):
         screen.blit(
@@ -191,8 +189,11 @@ class Game:
             self.map.grid[self.player.y][self.player.x] = 0
 
         for ghost in self.ghosts:
-            ghost.move_towards_player(self.player, self.map.size)
-       
+            ghost.move_towards_player(self.player, self.map.size) 
+
+            if ghost.x == self.player.x and ghost.y == self.player.y:
+                self.game_over = True
+    
     def draw_ui(self):
         score_text = self.font.render(
             f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
