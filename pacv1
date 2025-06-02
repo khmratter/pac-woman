@@ -7,11 +7,11 @@ TILE_SIZE = 30
 SCREEN_COLOR = (0, 0, 0)
 PLAYER_COLOR = (255, 105, 180)
 TILE_COLOR = (255, 182, 193)
-POINT_COLOR = (255, 215, 0)
+POINT_COLOR = (255, 244, 184)
 FONT_COLOR = (255, 255, 255)
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-
+#255, 215, 0
 MAX_LEVEL = 7
 class Player:
     def __init__(self, x, y):
@@ -148,7 +148,7 @@ class Map:
         for y, row in enumerate(self.grid):
             for x, tile in enumerate(row):
                 if tile == 1:                 
-                    color = (255, 215, 0)
+                    color = (255, 244, 184)
                 elif tile == 2:              
                     color = (90, 90, 90)
                 else:                        
@@ -206,13 +206,13 @@ class Game:
                 if event.key == pygame.K_SPACE:
                     self.next_level()
                 elif event.key == pygame.K_UP:
-                    self.player.move(0, -1, self.map.size)
+                    self.player.move(0, -1, self.map)
                 elif event.key == pygame.K_DOWN:
-                    self.player.move(0, 1, self.map.size)
+                    self.player.move(0, 1, self.map)
                 elif event.key == pygame.K_LEFT:
-                    self.player.move(-1, 0, self.map.size)
+                    self.player.move(-1, 0, self.map)
                 elif event.key == pygame.K_RIGHT:
-                    self.player.move(1, 0, self.map.size)
+                    self.player.move(1, 0, self.map)
 
     def update_game(self):
         if self.game_over:
