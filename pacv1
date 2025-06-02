@@ -160,11 +160,6 @@ class Map:
                 )
             
 class Game:
-    def calculate_offset(self):
-        self.map_pixel_size = self.map.size * TILE_SIZE
-        self.offset_x = (WINDOW_WIDTH - self.map_pixel_size) // 2
-        self.offset_y = (WINDOW_HEIGHT - self.map_pixel_size) // 2
-
     def __init__(self):
         pygame.init()
         self.level = 1
@@ -199,7 +194,7 @@ class Game:
         self.map = Map(self.level)
         self.player.x = self.map.size // 2
         self.player.y = self.map.size // 2
-        self.calculate_offset()
+        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
         self.create_ghosts_for_level()
 
     def handle_events(self):
@@ -226,7 +221,9 @@ class Game:
         if tile == 1:
             self.player.score += 1
             self.map.grid[self.player.y][self.player.x] = 0
-
+        if all(tile != 1 for row in self.map.grid for tile in row):
+            pygame.time.delay(500) 
+            self.next_level()
         for ghost in self.ghosts:
             ghost.move_towards_player(self.player, self.map.size) 
 
@@ -241,7 +238,7 @@ class Game:
         self.screen.blit(score_text, (10, 10))
 
     def draw_game_over(self):
-        text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
+        text = self.font.render("WYGRANA!!!", True, (255, 105, 180))
         self.screen.fill((0, 0, 0))
         text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         self.screen.blit(text, text_rect)
@@ -255,10 +252,8 @@ class Game:
             if self.game_over:
                 self.draw_game_over()
             else:
-                self.map.draw(self.screen, self.offset_x, self.offset_y)
-                for ghost in self.ghosts:
-                    ghost.draw(self.screen, self.offset_x, self.offset_y)
-                self.player.draw(self.screen, self.offset_x, self.offset_y)
+                self.map.draw(self.screen)
+                self.player.draw(self.screen)
                 self.draw_ui()
 
             pygame.display.flip()
@@ -266,7 +261,6 @@ class Game:
 
         pygame.quit()
         sys.exit()
-
 
 if __name__ == "__main__":
     game = Game()
