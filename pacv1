@@ -7,12 +7,14 @@ TILE_SIZE = 30
 SCREEN_COLOR = (0, 0, 0)
 PLAYER_COLOR = (255, 105, 180)
 TILE_COLOR = (255, 182, 193)
-POINT_COLOR = (255, 244, 184)
+POINT_COLOR = (255, 215, 0)
 FONT_COLOR = (255, 255, 255)
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-#255, 215, 0
+WALL_COLOR = (50, 50, 150)
+
 MAX_LEVEL = 7
+
 class Player:
     def __init__(self, x, y):
         self.x = x
@@ -20,23 +22,24 @@ class Player:
         self.score = 0
         self.lives = 3
 
-
-    def move(self, dx, dy, game_map):
+    def move(self, dx, dy, map_obj):
         new_x = self.x + dx
         new_y = self.y + dy
-        if (
-            0 <= new_x < game_map.size
-            and 0 <= new_y < game_map.size
-            and game_map.grid[new_y][new_x] != 2    
-        ):
+        if (0 <= new_x < map_obj.size and
+            0 <= new_y < map_obj.size and
+            map_obj.grid[new_y][new_x] != 2):
             self.x = new_x
             self.y = new_y
 
-    def draw(self, screen):
+    def draw(self, screen, offset_x, offset_y):
         pygame.draw.rect(
             screen,
             PLAYER_COLOR,
-            (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            (
+                offset_x + self.x * TILE_SIZE,
+                offset_y + self.y * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE)
         )
 
 class Ghost:
@@ -46,10 +49,10 @@ class Ghost:
         self.image = pygame.image.load(image_file).convert_alpha()
         self.image = pygame.transform.scale(self.image, (TILE_SIZE, TILE_SIZE))
         self.last_move_time = time.time()
-    
-    def move_towards_player(self, player, map_size):
+
+    def move_towards_player(self, player, map_obj):
         now = time.time()
-        if now - self.last_move_time < 0.5:
+        if now - self.last_move_time < 1:
             return  
 
         self.last_move_time = now  
@@ -59,25 +62,24 @@ class Ghost:
         distance = abs(dx) + abs(dy)
 
         if distance <= 3 or random.random() < 0.2:
-         
             if abs(dx) > abs(dy):
                 step_x = 1 if dx > 0 else -1
                 new_x = self.x + step_x
-                if 0 <= new_x < map_size:
+                if 0 <= new_x < map_obj.size and map_obj.grid[self.y][new_x] != 2:
                     self.x = new_x
             elif dy != 0:
                 step_y = 1 if dy > 0 else -1
                 new_y = self.y + step_y
-                if 0 <= new_y < map_size:
+                if 0 <= new_y < map_obj.size and map_obj.grid[new_y][self.x] != 2:
                     self.y = new_y
         else:
-            
             directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
             random.shuffle(directions)
             for dx, dy in directions:
                 new_x = self.x + dx
                 new_y = self.y + dy
-                if 0 <= new_x < map_size and 0 <= new_y < map_size:
+                if (0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size and
+                    map_obj.grid[new_y][new_x] != 2):
                     self.x = new_x
                     self.y = new_y
                     break
@@ -92,99 +94,96 @@ class Ghost:
         )
 
 class Map:
-  
     def __init__(self, level):
-        self.size = 2 * (3 + level - 1) + 1        
-        self.grid = [[2] * self.size for _ in range(self.size)]
-        self._generate_maze_dfs()
-        self._place_points()
+        self.level = level
+        self.size = 5 + (level - 1)*2
         
-    def _generate_maze_dfs(self):
-        stack = []
-        start = (1, 1)                
-        self.grid[start[1]][start[0]] = 0
-        stack.append(start)
-        
+        self.grid = [[2 for _ in range(self.size)] for _ in range(self.size)]
+        self.place_maze()
+        self.place_points()
 
-        dirs = [(-2, 0), (2, 0), (0, -2), (0, 2)]
+    def place_maze(self):
+        def in_bounds(x, y):
+            return 0 <= x < self.size and 0 <= y < self.size
 
-        while stack:
-            x, y = stack[-1]
-            random.shuffle(dirs)
-            carved = False
-
-            for dx, dy in dirs:
+        def carve(x, y):
+            self.grid[y][x] = 0
+            directions = [(2, 0), (-2, 0), (0, 2), (0, -2)]
+            random.shuffle(directions)
+            for dx, dy in directions:
                 nx, ny = x + dx, y + dy
-                if 1 <= nx < self.size-1 and 1 <= ny < self.size-1 and self.grid[ny][nx] == 2:
-                    self.grid[y + dy//2][x + dx//2] = 0
-                    self.grid[ny][nx] = 0
-                    stack.append((nx, ny))
-                    carved = True
-                    break
-            
-            if not carved:
-                stack.pop()
-        self.add_extra_passages(count=int(self.size))
-    
-    def _place_points(self):
-        mid = self.size // 2
+                if in_bounds(nx, ny) and self.grid[ny][nx] == 2:
+                    self.grid[y + dy // 2][x + dx // 2] = 0
+                    carve(nx, ny)
+
+        carve(self.size // 2, self.size // 2)
+
+        for y in range(1, self.size - 1):
+            for x in range(1, self.size - 1):
+                if self.grid[y][x] == 2 and random.randint(1,2) == 1:
+                    surrounding = sum(
+                        1 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                        if self.grid[y + dy][x + dx] == 2
+                    )
+                    if surrounding >= 2:
+                        self.grid[y][x] = 0
+        for i in range(1, self.size - 1, 2):
+            for x, y in [(i, 0), (i, self.size - 1), (0, i), (self.size - 1, i)]:
+                if random.random() < 0.3:
+                    self.grid[y][x] = 0
+
+    def place_points(self):
         for y in range(self.size):
             for x in range(self.size):
-            
-                if self.grid[y][x] == 0 and not (x == mid and y == mid):
+                if self.grid[y][x] == 0 and not (x == self.size // 2 and y == self.size // 2):
                     self.grid[y][x] = 1
-    def add_extra_passages(self, count):
-        for _ in range(count):
-            x = random.randint(1, self.size - 2)
-            y = random.randint(1, self.size - 2)
-            if self.grid[y][x] == 2: 
-                neighbors = [(y-1,x), (y+1,x), (y,x-1), (y,x+1)]
-                passage_neighbors = [n for n in neighbors if self.grid[n[0]][n[1]] == 0]
-                if len(passage_neighbors) >= 2:  
-                    self.grid[y][x] = 0  
-                    
-    
-    def draw(self, screen):
+
+    def draw(self, screen, offset_x, offset_y):
         for y, row in enumerate(self.grid):
             for x, tile in enumerate(row):
-                if tile == 1:                 
-                    color = (255, 244, 184)
-                elif tile == 2:              
-                    color = (90, 90, 90)
-                else:                        
-                    color = (255, 182, 193)
+                if tile == 0:
+                    color = TILE_COLOR
+                elif tile == 1:
+                    color = POINT_COLOR
+                elif tile == 2:
+                    color = WALL_COLOR
                 pygame.draw.rect(
                     screen,
                     color,
-                    pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                    pygame.Rect(
+                        offset_x + x * TILE_SIZE,
+                        offset_y + y * TILE_SIZE,
+                        TILE_SIZE, TILE_SIZE
+                    )
                 )
-            
+
 class Game:
+    def calculate_offset(self):
+        self.map_pixel_size = self.map.size * TILE_SIZE
+        self.offset_x = (WINDOW_WIDTH - self.map_pixel_size) // 2
+        self.offset_y = (WINDOW_HEIGHT - self.map_pixel_size) // 2
+
     def __init__(self):
         pygame.init()
         self.level = 1
         self.map = Map(self.level)
+        self.calculate_offset()
         self.player = Player(self.map.size // 2, self.map.size // 2)
-        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
-        pygame.display.set_caption("PacWoman OOP")
-        pygame.key.set_repeat(200, 100)
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        self.create_ghosts_for_level()
+        pygame.display.set_caption("PacWoman Labirynt")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 30)
         self.running = True
         self.game_over = False
-        self.create_ghosts_for_level()
-        
+
     def create_ghosts_for_level(self):
         self.ghosts = []
-        
-        self.ghosts.append(Ghost(self.map.size - 1, self.map.size - 1))
-        
+        self.ghosts.append(Ghost(self.map.size - 2, self.map.size - 2))
         if self.level >= 3:
-            self.ghosts.append(Ghost(0, 0, "duch1.png"))
-        
+            self.ghosts.append(Ghost(1, 1, "duch1.png"))
         if self.level >= 5:
-            self.ghosts.append(Ghost(self.map.size - 1, 0, "duch2.png"))
-
+            self.ghosts.append(Ghost(self.map.size - 2, 1, "duch2.png"))
 
     def next_level(self):
         self.level += 1
@@ -194,7 +193,7 @@ class Game:
         self.map = Map(self.level)
         self.player.x = self.map.size // 2
         self.player.y = self.map.size // 2
-        self.screen = pygame.display.set_mode((self.map.size * TILE_SIZE, self.map.size * TILE_SIZE))
+        self.calculate_offset()
         self.create_ghosts_for_level()
 
     def handle_events(self):
@@ -221,15 +220,15 @@ class Game:
         if tile == 1:
             self.player.score += 1
             self.map.grid[self.player.y][self.player.x] = 0
-        if all(tile != 1 for row in self.map.grid for tile in row):
-            pygame.time.delay(500) 
-            self.next_level()
-        for ghost in self.ghosts:
-            ghost.move_towards_player(self.player, self.map.size) 
 
+        if not any(1 in row for row in self.map.grid):
+            self.next_level()
+
+        for ghost in self.ghosts:
+            ghost.move_towards_player(self.player, self.map)
             if ghost.x == self.player.x and ghost.y == self.player.y:
                 self.game_over = True
-    
+
     def draw_ui(self):
         score_text = self.font.render(
             f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
@@ -238,7 +237,7 @@ class Game:
         self.screen.blit(score_text, (10, 10))
 
     def draw_game_over(self):
-        text = self.font.render("WYGRANA!!!", True, (255, 105, 180))
+        text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
         self.screen.fill((0, 0, 0))
         text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         self.screen.blit(text, text_rect)
@@ -247,15 +246,15 @@ class Game:
         while self.running:
             self.handle_events()
             self.update_game()
-
             self.screen.fill(SCREEN_COLOR)
             if self.game_over:
                 self.draw_game_over()
             else:
-                self.map.draw(self.screen)
-                self.player.draw(self.screen)
+                self.map.draw(self.screen, self.offset_x, self.offset_y)
+                for ghost in self.ghosts:
+                    ghost.draw(self.screen, self.offset_x, self.offset_y)
+                self.player.draw(self.screen, self.offset_x, self.offset_y)
                 self.draw_ui()
-
             pygame.display.flip()
             self.clock.tick(60)
 
