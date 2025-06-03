@@ -9,7 +9,6 @@ WINDOW_HEIGHT = 600
 WALL_COLOR = (50, 50, 150)
 
 MAX_LEVEL = 7
-
 class Player:
     def __init__(self, x, y):
         self.x = x
