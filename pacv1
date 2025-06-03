@@ -1,8 +1,3 @@
-import pygame
-import sys
-import random
-import time
-
 TILE_SIZE = 30
 SCREEN_COLOR = (0, 0, 0)
 PLAYER_COLOR = (255, 105, 180)
@@ -52,10 +47,10 @@ class Ghost:
 
     def move_towards_player(self, player, map_obj):
         now = time.time()
-        if now - self.last_move_time < 1:
-            return  
+        if now - self.last_move_time < 0.5:
+            return
 
-        self.last_move_time = now  
+        self.last_move_time = now
 
         dx = player.x - self.x
         dy = player.y - self.y
@@ -96,8 +91,7 @@ class Ghost:
 class Map:
     def __init__(self, level):
         self.level = level
-        self.size = 5 + (level - 1)*2
-        
+        self.size = 5 + (level - 1) * 2
         self.grid = [[2 for _ in range(self.size)] for _ in range(self.size)]
         self.place_maze()
         self.place_points()
@@ -120,13 +114,14 @@ class Map:
 
         for y in range(1, self.size - 1):
             for x in range(1, self.size - 1):
-                if self.grid[y][x] == 2 and random.randint(1,2) == 1:
+                if self.grid[y][x] == 2 and random.randint(1, 2) == 1:
                     surrounding = sum(
                         1 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
                         if self.grid[y + dy][x + dx] == 2
                     )
                     if surrounding >= 2:
                         self.grid[y][x] = 0
+
         for i in range(1, self.size - 1, 2):
             for x, y in [(i, 0), (i, self.size - 1), (0, i), (self.size - 1, i)]:
                 if random.random() < 0.3:
@@ -141,21 +136,28 @@ class Map:
     def draw(self, screen, offset_x, offset_y):
         for y, row in enumerate(self.grid):
             for x, tile in enumerate(row):
-                if tile == 0:
-                    color = TILE_COLOR
-                elif tile == 1:
-                    color = POINT_COLOR
-                elif tile == 2:
-                    color = WALL_COLOR
-                pygame.draw.rect(
-                    screen,
-                    color,
-                    pygame.Rect(
-                        offset_x + x * TILE_SIZE,
-                        offset_y + y * TILE_SIZE,
-                        TILE_SIZE, TILE_SIZE
+                px = offset_x + x * TILE_SIZE
+                py = offset_y + y * TILE_SIZE
+
+                if tile in (0, 1):
+                    pygame.draw.rect(screen, TILE_COLOR, pygame.Rect(px, py, TILE_SIZE, TILE_SIZE))
+
+                if tile == 1:
+                    pygame.draw.circle(
+                        screen,
+                        POINT_COLOR,
+                        (px + TILE_SIZE // 2, py + TILE_SIZE // 2),
+                        TILE_SIZE // 6
                     )
-                )
+
+                elif tile == 2:
+                    wall_thickness = 4
+                    margin = (TILE_SIZE - wall_thickness) // 2
+                    pygame.draw.rect(
+                        screen,
+                        WALL_COLOR,
+                        pygame.Rect(px + margin, py + margin, wall_thickness, wall_thickness)
+                    )
 
 class Game:
     def calculate_offset(self):
