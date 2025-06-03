@@ -1,14 +1,29 @@
+import pygame
+import sys
+import random
+import time
+from collections import deque
+
 TILE_SIZE = 30
 SCREEN_COLOR = (0, 0, 0)
 PLAYER_COLOR = (255, 105, 180)
 TILE_COLOR = (255, 182, 193)
 POINT_COLOR = (255, 215, 0)
 FONT_COLOR = (255, 255, 255)
+WALL_COLOR = (255, 20, 0)
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-WALL_COLOR = (50, 50, 150)
 
 MAX_LEVEL = 7
+
+class Tile:
+    def __init__(self):
+        self.wall_top = True
+        self.wall_bottom = True
+        self.wall_left = True
+        self.wall_right = True
+        self.point = False
+
 class Player:
     def __init__(self, x, y):
         self.x = x
@@ -19,22 +34,19 @@ class Player:
     def move(self, dx, dy, map_obj):
         new_x = self.x + dx
         new_y = self.y + dy
-        if (0 <= new_x < map_obj.size and
-            0 <= new_y < map_obj.size and
-            map_obj.grid[new_y][new_x] != 2):
-            self.x = new_x
-            self.y = new_y
+        if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:
+            current = map_obj.grid[self.y][self.x]
+            target  = map_obj.grid[new_y][new_x]
+            if dx == -1 and (current.wall_left or target.wall_right): return
+            if dx ==  1 and (current.wall_right or target.wall_left): return
+            if dy == -1 and (current.wall_top or target.wall_bottom): return
+            if dy ==  1 and (current.wall_bottom or target.wall_top): return
+            self.x, self.y = new_x, new_y
 
-    def draw(self, screen, offset_x, offset_y):
-        pygame.draw.rect(
-            screen,
-            PLAYER_COLOR,
-            (
-                offset_x + self.x * TILE_SIZE,
-                offset_y + self.y * TILE_SIZE,
-                TILE_SIZE,
-                TILE_SIZE)
-        )
+    def draw(self, screen, ox, oy):
+        pygame.draw.rect(screen, PLAYER_COLOR,
+                         (ox + self.x*TILE_SIZE, oy + self.y*TILE_SIZE,
+                          TILE_SIZE, TILE_SIZE))
 
 class Ghost:
     def __init__(self, x, y, image_file="duch.png"):
@@ -42,149 +54,178 @@ class Ghost:
         self.y = y
         self.image = pygame.image.load(image_file).convert_alpha()
         self.image = pygame.transform.scale(self.image, (TILE_SIZE, TILE_SIZE))
-        self.last_move_time = time.time()
+        self.last_move = time.time()
 
-    def move_towards_player(self, player, map_obj):
-        now = time.time()
-        if now - self.last_move_time < 0.5:
+    def move_towards(self, player, map_obj):
+        if time.time() - self.last_move < 0.5:
             return
-
-        self.last_move_time = now
-
+        self.last_move = time.time()
         dx = player.x - self.x
         dy = player.y - self.y
-        distance = abs(dx) + abs(dy)
+        dist = abs(dx) + abs(dy)
+        def can(nx, ny):
+            if not (0 <= nx < map_obj.size and 0 <= ny < map_obj.size):
+                return False
+            c = map_obj.grid[self.y][self.x]
+            t = map_obj.grid[ny][nx]
+            if nx > self.x and (c.wall_right or t.wall_left): return False
+            if nx < self.x and (c.wall_left  or t.wall_right): return False
+            if ny > self.y and (c.wall_bottom or t.wall_top): return False
+            if ny < self.y and (c.wall_top   or t.wall_bottom): return False
+            return True
 
-        if distance <= 3 or random.random() < 0.2:
+        if dist <= 3 or random.random() < 0.2:
             if abs(dx) > abs(dy):
-                step_x = 1 if dx > 0 else -1
-                new_x = self.x + step_x
-                if 0 <= new_x < map_obj.size and map_obj.grid[self.y][new_x] != 2:
-                    self.x = new_x
-            elif dy != 0:
-                step_y = 1 if dy > 0 else -1
-                new_y = self.y + step_y
-                if 0 <= new_y < map_obj.size and map_obj.grid[new_y][self.x] != 2:
-                    self.y = new_y
-        else:
-            directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-            random.shuffle(directions)
-            for dx, dy in directions:
-                new_x = self.x + dx
-                new_y = self.y + dy
-                if (0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size and
-                    map_obj.grid[new_y][new_x] != 2):
-                    self.x = new_x
-                    self.y = new_y
-                    break
+                nx = self.x + (1 if dx>0 else -1)
+                if can(nx, self.y):
+                    self.x = nx; return
+            if dy != 0:
+                ny = self.y + (1 if dy>0 else -1)
+                if can(self.x, ny):
+                    self.y = ny; return
 
-    def draw(self, screen, offset_x, offset_y):
-        screen.blit(
-            self.image,
-            (
-                offset_x + self.x * TILE_SIZE,
-                offset_y + self.y * TILE_SIZE
-            )
-        )
+        dirs = [(1,0),(-1,0),(0,1),(0,-1)]
+        random.shuffle(dirs)
+        for dx_,dy_ in dirs:
+            nx, ny = self.x+dx_, self.y+dy_
+            if can(nx, ny):
+                self.x, self.y = nx, ny
+                break
+
+    def draw(self, screen, ox, oy):
+        screen.blit(self.image, (ox + self.x*TILE_SIZE, oy + self.y*TILE_SIZE))
 
 class Map:
     def __init__(self, level):
         self.level = level
-        self.size = 5 + (level - 1) * 2
-        self.grid = [[2 for _ in range(self.size)] for _ in range(self.size)]
-        self.place_maze()
-        self.place_points()
+        self.size = 5 + level - 1
+        self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
+        self._gen_maze()
+        self._place_points()
+        self._mark_accessible()
 
-    def place_maze(self):
-        def in_bounds(x, y):
-            return 0 <= x < self.size and 0 <= y < self.size
+    def _gen_maze(self):
+        size = self.size
+        for y in range(size):
+            for x in range(size):
+                t = self.grid[y][x]
+                t.wall_top = t.wall_bottom = t.wall_left = t.wall_right = True
+        dirs = [('top',0,-1,'bottom'),('bottom',0,1,'top'),
+                ('left',-1,0,'right'),('right',1,0,'left')]
+        visited=[[False]*size for _ in range(size)]
+        def dfs(x,y):
+            visited[y][x]=True
+            random.shuffle(dirs)
+            for w,dx,dy,ow in dirs:
+                nx, ny = x+dx, y+dy
+                if 0<=nx<size and 0<=ny<size and not visited[ny][nx]:
+                    setattr(self.grid[y][x], f'wall_{w}', False)
+                    setattr(self.grid[ny][nx], f'wall_{ow}', False)
+                    dfs(nx,ny)
+        dfs(self.size//2, self.size//2)
 
-        def carve(x, y):
-            self.grid[y][x] = 0
-            directions = [(2, 0), (-2, 0), (0, 2), (0, -2)]
-            random.shuffle(directions)
-            for dx, dy in directions:
-                nx, ny = x + dx, y + dy
-                if in_bounds(nx, ny) and self.grid[ny][nx] == 2:
-                    self.grid[y + dy // 2][x + dx // 2] = 0
-                    carve(nx, ny)
-
-        carve(self.size // 2, self.size // 2)
-
-        for y in range(1, self.size - 1):
-            for x in range(1, self.size - 1):
-                if self.grid[y][x] == 2 and random.randint(1, 2) == 1:
-                    surrounding = sum(
-                        1 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                        if self.grid[y + dy][x + dx] == 2
-                    )
-                    if surrounding >= 2:
-                        self.grid[y][x] = 0
-
-        for i in range(1, self.size - 1, 2):
-            for x, y in [(i, 0), (i, self.size - 1), (0, i), (self.size - 1, i)]:
-                if random.random() < 0.3:
-                    self.grid[y][x] = 0
-
-    def place_points(self):
+    def _place_points(self):
+        cx,cy = self.size//2, self.size//2
         for y in range(self.size):
             for x in range(self.size):
-                if self.grid[y][x] == 0 and not (x == self.size // 2 and y == self.size // 2):
-                    self.grid[y][x] = 1
+                self.grid[y][x].point = not (x==cx and y==cy)
 
-    def draw(self, screen, offset_x, offset_y):
-        for y, row in enumerate(self.grid):
-            for x, tile in enumerate(row):
-                px = offset_x + x * TILE_SIZE
-                py = offset_y + y * TILE_SIZE
+    def _mark_accessible(self):
+        size=self.size
+        vis=[[False]*size for _ in range(size)]
+        sx,sy=size//2,size//2
+        q=deque([(sx,sy)])
+        vis[sy][sx]=True
+        while q:
+            x,y=q.popleft()
+            self.grid[y][x].point = not (x==sx and y==sy)
+            t=self.grid[y][x]
+            for dx,dy,wt,bt in [(0,-1,'wall_top','wall_bottom'),
+                                (0,1,'wall_bottom','wall_top'),
+                                (-1,0,'wall_left','wall_right'),
+                                (1,0,'wall_right','wall_left')]:
+                nx,ny=x+dx,y+dy
+                if 0<=nx<size and 0<=ny<size and not getattr(t,wt):
+                    if not vis[ny][nx]:
+                        vis[ny][nx]=True
+                        q.append((nx,ny))
 
-                if tile in (0, 1):
-                    pygame.draw.rect(screen, TILE_COLOR, pygame.Rect(px, py, TILE_SIZE, TILE_SIZE))
+        for y in range(size):
+            for x in range(size):
+                if not vis[y][x]:
+                    self.grid[y][x].point=False
 
-                if tile == 1:
-                    pygame.draw.circle(
-                        screen,
-                        POINT_COLOR,
-                        (px + TILE_SIZE // 2, py + TILE_SIZE // 2),
-                        TILE_SIZE // 6
-                    )
+    def draw(self, screen, ox, oy):
+        for y in range(self.size):
+            for x in range(self.size):
+                rect = pygame.Rect(ox+x*TILE_SIZE, oy+y*TILE_SIZE,
+                                   TILE_SIZE, TILE_SIZE)
+                pygame.draw.rect(screen, TILE_COLOR, rect)
+                if self.grid[y][x].point:
+                    pygame.draw.circle(screen, POINT_COLOR,
+                                       rect.center, TILE_SIZE//6)
+                t=self.grid[y][x]
+                if t.wall_top:    pygame.draw.line(screen, WALL_COLOR, rect.topleft,    rect.topright,    2)
+                if t.wall_bottom: pygame.draw.line(screen, WALL_COLOR, rect.bottomleft, rect.bottomright, 2)
+                if t.wall_left:   pygame.draw.line(screen, WALL_COLOR, rect.topleft,    rect.bottomleft, 2)
+                if t.wall_right:  pygame.draw.line(screen, WALL_COLOR, rect.topright,   rect.bottomright, 2)
+    
+    def _add_extra_passages(self, extra=5):
+        count = 0
+        size = self.size
+        while count < extra:
+            x = random.randint(0, size-2)
+            y = random.randint(0, size-2)
+            t1 = self.grid[y][x]
+            if random.choice([True, False]):
+                t2 = self.grid[y][x+1]
+                if t1.wall_right and t2.wall_left:
+                    t1.wall_right = False
+                    t2.wall_left = False
+                    count += 1
+            else:
+                t2 = self.grid[y+1][x]
+                if t1.wall_bottom and t2.wall_top:
+                    t1.wall_bottom = False
+                    t2.wall_top = False
+                    count += 1
+    def __init__(self, level):
+        self.level = level
+        self.size = 5 + level - 1
+        self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
+        self._gen_maze()
+        self._add_extra_passages(extra=self.level + 3)
+        self._place_points()
+        self._mark_accessible()
 
-                elif tile == 2:
-                    wall_thickness = 4
-                    margin = (TILE_SIZE - wall_thickness) // 2
-                    pygame.draw.rect(
-                        screen,
-                        WALL_COLOR,
-                        pygame.Rect(px + margin, py + margin, wall_thickness, wall_thickness)
-                    )
 
 class Game:
     def calculate_offset(self):
-        self.map_pixel_size = self.map.size * TILE_SIZE
-        self.offset_x = (WINDOW_WIDTH - self.map_pixel_size) // 2
-        self.offset_y = (WINDOW_HEIGHT - self.map_pixel_size) // 2
+        ms = self.map.size * TILE_SIZE
+        self.ox = (WINDOW_WIDTH  - ms)//2
+        self.oy = (WINDOW_HEIGHT - ms)//2
 
     def __init__(self):
         pygame.init()
         self.level = 1
-        self.map = Map(self.level)
-        self.calculate_offset()
-        self.player = Player(self.map.size // 2, self.map.size // 2)
+        self.map   = Map(self.level)
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        self.create_ghosts_for_level()
-        pygame.display.set_caption("PacWoman Labirynt")
+        self.calculate_offset()
+        cx,cy = self.map.size//2, self.map.size//2
+        self.ghosts = [Ghost(cx, cy)]
+        self.player = Player(cx, min(cy+2, self.map.size-1))
+        self._add_extra_ghosts()
+        pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont(None, 30)
+        self.font  = pygame.font.SysFont(None,30)
         self.running = True
         self.game_over = False
 
-    def create_ghosts_for_level(self):
-        self.ghosts = []
-        self.ghosts.append(Ghost(self.map.size - 2, self.map.size - 2))
-        if self.level >= 3:
-            self.ghosts.append(Ghost(1, 1, "duch1.png"))
-        if self.level >= 5:
-            self.ghosts.append(Ghost(self.map.size - 2, 1, "duch2.png"))
+    def _add_extra_ghosts(self):
+        if self.level >=3:
+            self.ghosts.append(Ghost(0,0,"duch1.png"))
+        if self.level >=5:
+            self.ghosts.append(Ghost(self.map.size-1,0,"duch2.png"))
 
     def next_level(self):
         self.level += 1
@@ -192,76 +233,66 @@ class Game:
             self.game_over = True
             return
         self.map = Map(self.level)
-        self.player.x = self.map.size // 2
-        self.player.y = self.map.size // 2
         self.calculate_offset()
-        self.create_ghosts_for_level()
+        cx, cy = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(cx, cy)]
+        self.player.x, self.player.y = cx, min(cy + 2, self.map.size - 1)
+        self._add_extra_ghosts()
 
     def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
                 self.running = False
-
-            if not self.game_over and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+            if not self.game_over and e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_SPACE:
                     self.next_level()
-                elif event.key == pygame.K_UP:
+                elif e.key == pygame.K_UP:
                     self.player.move(0, -1, self.map)
-                elif event.key == pygame.K_DOWN:
+                elif e.key == pygame.K_DOWN:
                     self.player.move(0, 1, self.map)
-                elif event.key == pygame.K_LEFT:
+                elif e.key == pygame.K_LEFT:
                     self.player.move(-1, 0, self.map)
-                elif event.key == pygame.K_RIGHT:
+                elif e.key == pygame.K_RIGHT:
                     self.player.move(1, 0, self.map)
 
-    def update_game(self):
+    def update(self):
         if self.game_over:
             return
         tile = self.map.grid[self.player.y][self.player.x]
-        if tile == 1:
+        if tile.point:
             self.player.score += 1
-            self.map.grid[self.player.y][self.player.x] = 0
-
-        if not any(1 in row for row in self.map.grid):
+            tile.point = False
+        
+        if not any(tile.point for row in self.map.grid for tile in row):
             self.next_level()
-
-        for ghost in self.ghosts:
-            ghost.move_towards_player(self.player, self.map)
-            if ghost.x == self.player.x and ghost.y == self.player.y:
+        
+        for g in self.ghosts:
+            g.move_towards(self.player, self.map)
+            if g.x == self.player.x and g.y == self.player.y:
                 self.game_over = True
 
     def draw_ui(self):
-        score_text = self.font.render(
-            f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
-            True, FONT_COLOR
-        )
-        self.screen.blit(score_text, (10, 10))
-
-    def draw_game_over(self):
-        text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
-        self.screen.fill((0, 0, 0))
-        text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
-        self.screen.blit(text, text_rect)
+        txt = self.font.render(f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}", True, FONT_COLOR)
+        self.screen.blit(txt, (10, 10))
 
     def run(self):
         while self.running:
             self.handle_events()
-            self.update_game()
+            self.update()
             self.screen.fill(SCREEN_COLOR)
             if self.game_over:
-                self.draw_game_over()
+                go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
+                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
             else:
-                self.map.draw(self.screen, self.offset_x, self.offset_y)
-                for ghost in self.ghosts:
-                    ghost.draw(self.screen, self.offset_x, self.offset_y)
-                self.player.draw(self.screen, self.offset_x, self.offset_y)
+                self.map.draw(self.screen, self.ox, self.oy)
+                for g in self.ghosts:
+                    g.draw(self.screen, self.ox, self.oy)
+                self.player.draw(self.screen, self.ox, self.oy)
                 self.draw_ui()
             pygame.display.flip()
             self.clock.tick(60)
-
         pygame.quit()
         sys.exit()
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    Game().run()
