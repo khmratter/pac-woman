@@ -220,6 +220,9 @@ class Game:
         self.font  = pygame.font.SysFont(None,30)
         self.running = True
         self.game_over = False
+        self.time_game_over = 0
+        pygame.mixer.music.load("background_music.mp3")
+        pygame.mixer.music.play(-1)
 
     def _add_extra_ghosts(self):
         if self.level >=3:
@@ -228,8 +231,12 @@ class Game:
             self.ghosts.append(Ghost(self.map.size-1,0,"duch2.png"))
 
     def next_level(self):
+        level = pygame.mixer.Sound("level_up.mp3")
+        pygame.mixer.Sound.play(level)
         self.level += 1
         if self.level > MAX_LEVEL:
+            victory = pygame.mixer.Sound("victory.mp3")
+            pygame.mixer.Sound.play(victory)
             self.game_over = True
             return
         self.map = Map(self.level)
@@ -269,7 +276,19 @@ class Game:
         for g in self.ghosts:
             g.move_towards(self.player, self.map)
             if g.x == self.player.x and g.y == self.player.y:
-                self.game_over = True
+                ouch = pygame.mixer.Sound("ouch.mp3")
+                pygame.mixer.Sound.play(ouch)
+                self.player.lives -= 1
+                if self.player.lives <= 0:
+                    over = pygame.mixer.Sound("game_over.mp3")
+                    over.set_volume(0.3)
+                    pygame.mixer.Sound.play(over)
+                    self.game_over = True
+                    self.time_game_over = time.time()
+                else:
+                   cx,cy = self.map.size//2, min(self.map.size // 2 + 2, self.map.size - 1)
+                   self.player.x, self.player.y = cx, cy
+                   #time.sleep(0.25) 
 
     def draw_ui(self):
         txt = self.font.render(f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}", True, FONT_COLOR)
@@ -280,9 +299,12 @@ class Game:
             self.handle_events()
             self.update()
             self.screen.fill(SCREEN_COLOR)
-            if self.game_over:
+            if (self.game_over and self.level >= MAX_LEVEL and self.player.lives > 0):
+                go = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
+                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))  
+            elif self.game_over:
                 go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
-                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
+                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))   
             else:
                 self.map.draw(self.screen, self.ox, self.oy)
                 for g in self.ghosts:
@@ -290,6 +312,10 @@ class Game:
                 self.player.draw(self.screen, self.ox, self.oy)
                 self.draw_ui()
             pygame.display.flip()
+            if self.game_over and self.time_game_over:
+                if time.time() - self.time_game_over > 10:
+                    pygame.mixer.music.stop()
+                    self.running = False
             self.clock.tick(60)
         pygame.quit()
         sys.exit()
