@@ -94,7 +94,6 @@ class Ghost:
 
     def draw(self, screen, ox, oy):
         screen.blit(self.image, (ox + self.x*TILE_SIZE, oy + self.y*TILE_SIZE))
-
 class Map:
     def __init__(self, level):
         self.level = level
@@ -105,7 +104,8 @@ class Map:
         self._break_long_walls(max_len=3)
         self._place_points()
         self._mark_accessible()
-#generowanie labiryntu metodą dfs
+
+    # Generuje labirynt metodą DFS
     def _gen_maze(self):
         size = self.size
         for y in range(size):
@@ -136,7 +136,8 @@ class Map:
                         break
 
         dfs(self.size // 2, self.size // 2)
-#dodaje losowe przejścia w labiryncie
+
+    # Dodaje losowe dodatkowe przejścia
     def _add_extra_passages(self, extra=5):
         count = 0
         size = self.size
@@ -156,9 +157,9 @@ class Map:
                     t1.wall_bottom = False
                     t2.wall_top = False
                     count += 1
-#sprawia że najdłuższe ściany(pionowo i poziomo) mogą mieć max długość 3
+
+    # Przerywa zbyt długie ściany
     def _break_long_walls(self, max_len=3):
- #pionowo       
         for y in range(self.size):
             count = 0
             for x in range(self.size - 1):
@@ -170,7 +171,6 @@ class Map:
                         count = 0
                 else:
                     count = 0
- #poziomo       
         for x in range(self.size):
             count = 0
             for y in range(self.size - 1):
@@ -182,6 +182,39 @@ class Map:
                         count = 0
                 else:
                     count = 0
+
+    # Ustawia punkt na każdym wolnym polu (oprócz pola startowego gracza)
+    def _place_points(self):
+        start_x = self.size // 2
+        start_y = min(self.size // 2 + 2, self.size - 1)
+        for y in range(self.size):
+            for x in range(self.size):
+                if (x, y) == (start_x, start_y):
+                    continue  # pomijamy pole startowe gracza
+                self.grid[y][x].point = True
+
+    # Na razie pusta – można użyć np. do oznaczenia dostępnych pól
+    def _mark_accessible(self):
+        pass
+
+    # Rysowanie planszy
+    def draw(self, screen, ox, oy):
+        for y in range(self.size):
+            for x in range(self.size):
+                tile = self.grid[y][x]
+                tx, ty = ox + x * TILE_SIZE, oy + y * TILE_SIZE
+                pygame.draw.rect(screen, TILE_COLOR, (tx, ty, TILE_SIZE, TILE_SIZE))
+                if tile.point:
+                    pygame.draw.circle(screen, POINT_COLOR,
+                                       (tx + TILE_SIZE//2, ty + TILE_SIZE//2), TILE_SIZE//5)
+                if tile.wall_top:
+                    pygame.draw.line(screen, WALL_COLOR, (tx, ty), (tx + TILE_SIZE, ty), 2)
+                if tile.wall_bottom:
+                    pygame.draw.line(screen, WALL_COLOR, (tx, ty + TILE_SIZE), (tx + TILE_SIZE, ty + TILE_SIZE), 2)
+                if tile.wall_left:
+                    pygame.draw.line(screen, WALL_COLOR, (tx, ty), (tx, ty + TILE_SIZE), 2)
+                if tile.wall_right:
+                    pygame.draw.line(screen, WALL_COLOR, (tx + TILE_SIZE, ty), (tx + TILE_SIZE, ty + TILE_SIZE), 2)
 
 class Game:
     def calculate_offset(self):
@@ -306,8 +339,10 @@ class Game:
                     pygame.mixer.music.stop()
                     self.running = False
             self.clock.tick(60)
+        
         pygame.quit()
         sys.exit()
 
 if __name__ == "__main__":
-    Game().run()
+    game = Game()
+    game.run()
