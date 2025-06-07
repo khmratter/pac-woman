@@ -45,8 +45,8 @@ class Player:
 
     def draw(self, screen, ox, oy):
         pygame.draw.rect(screen, PLAYER_COLOR,
-                         (ox + self.x*TILE_SIZE, oy + self.y*TILE_SIZE,
-                          TILE_SIZE, TILE_SIZE))
+                         (ox + self.x*TILE_SIZE + 2, oy + self.y*TILE_SIZE + 2,
+                          TILE_SIZE - 2, TILE_SIZE - 2))
 
 class Ghost:
     def __init__(self, x, y, image_file="duch.png"):
