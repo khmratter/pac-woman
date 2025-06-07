@@ -1,4 +1,3 @@
-
 import pygame
 import sys
 import random
@@ -103,10 +102,10 @@ class Map:
         self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
         self._gen_maze()
         self._add_extra_passages(extra=self.level + 3)
-        self._break_long_walls(max_len=3)  # <-- NOWA LINIA
+        self._break_long_walls(max_len=3)
         self._place_points()
         self._mark_accessible()
-
+#generowanie labiryntu metodą dfs
     def _gen_maze(self):
         size = self.size
         for y in range(size):
@@ -137,7 +136,7 @@ class Map:
                         break
 
         dfs(self.size // 2, self.size // 2)
-
+#dodaje losowe przejścia w labiryncie
     def _add_extra_passages(self, extra=5):
         count = 0
         size = self.size
@@ -157,9 +156,9 @@ class Map:
                     t1.wall_bottom = False
                     t2.wall_top = False
                     count += 1
-
+#sprawia że najdłuższe ściany(pionowo i poziomo) mogą mieć max długość 3
     def _break_long_walls(self, max_len=3):
-        
+ #pionowo       
         for y in range(self.size):
             count = 0
             for x in range(self.size - 1):
@@ -171,7 +170,7 @@ class Map:
                         count = 0
                 else:
                     count = 0
-        
+ #poziomo       
         for x in range(self.size):
             count = 0
             for y in range(self.size - 1):
@@ -279,11 +278,11 @@ class Game:
                 else:
                     cx, cy = self.map.size//2, min(self.map.size // 2 + 2, self.map.size - 1)
                     self.player.x, self.player.y = cx, cy
-
+#wyświetla ilość pozostałych żyć, zdobytych pkt i aktuualnego poziomu
     def draw_ui(self):
         txt = self.font.render(f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}", True, FONT_COLOR)
         self.screen.blit(txt, (10, 10))
-
+#główna pętla gry
     def run(self):
         while self.running:
             self.handle_events()
