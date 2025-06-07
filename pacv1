@@ -1,8 +1,10 @@
+
 import pygame
 import sys
 import random
 import time
 from collections import deque
+import os
 
 TILE_SIZE = 30
 SCREEN_COLOR = (0, 0, 0)
@@ -13,7 +15,6 @@ FONT_COLOR = (255, 255, 255)
 WALL_COLOR = (255, 20, 0)
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-
 MAX_LEVEL = 7
 
 class Tile:
@@ -101,6 +102,8 @@ class Map:
         self.size = 5 + level - 1
         self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
         self._gen_maze()
+        self._add_extra_passages(extra=self.level + 3)
+        self._break_long_walls(max_len=3)  # <-- NOWA LINIA
         self._place_points()
         self._mark_accessible()
 
@@ -110,66 +113,31 @@ class Map:
             for x in range(size):
                 t = self.grid[y][x]
                 t.wall_top = t.wall_bottom = t.wall_left = t.wall_right = True
+
         dirs = [('top',0,-1,'bottom'),('bottom',0,1,'top'),
                 ('left',-1,0,'right'),('right',1,0,'left')]
-        visited=[[False]*size for _ in range(size)]
-        def dfs(x,y):
-            visited[y][x]=True
-            random.shuffle(dirs)
-            for w,dx,dy,ow in dirs:
-                nx, ny = x+dx, y+dy
-                if 0<=nx<size and 0<=ny<size and not visited[ny][nx]:
-                    setattr(self.grid[y][x], f'wall_{w}', False)
-                    setattr(self.grid[ny][nx], f'wall_{ow}', False)
-                    dfs(nx,ny)
-        dfs(self.size//2, self.size//2)
+        visited = [[False]*size for _ in range(size)]
 
-    def _place_points(self):
-        cx,cy = self.size//2, self.size//2
-        for y in range(self.size):
-            for x in range(self.size):
-                self.grid[y][x].point = not (x==cx and y==cy)
+        def dfs(x, y):
+            visited[y][x] = True
+            dir_order = dirs[:]
+            random.shuffle(dir_order)
+            for w, dx, dy, ow in dir_order:
+                steps = random.randint(1, 3)
+                cx, cy = x, y
+                for _ in range(steps):
+                    nx, ny = cx + dx, cy + dy
+                    if 0 <= nx < size and 0 <= ny < size and not visited[ny][nx]:
+                        setattr(self.grid[cy][cx], f'wall_{w}', False)
+                        setattr(self.grid[ny][nx], f'wall_{ow}', False)
+                        visited[ny][nx] = True
+                        dfs(nx, ny)
+                        break
+                    else:
+                        break
 
-    def _mark_accessible(self):
-        size=self.size
-        vis=[[False]*size for _ in range(size)]
-        sx,sy=size//2,size//2
-        q=deque([(sx,sy)])
-        vis[sy][sx]=True
-        while q:
-            x,y=q.popleft()
-            self.grid[y][x].point = not (x==sx and y==sy)
-            t=self.grid[y][x]
-            for dx,dy,wt,bt in [(0,-1,'wall_top','wall_bottom'),
-                                (0,1,'wall_bottom','wall_top'),
-                                (-1,0,'wall_left','wall_right'),
-                                (1,0,'wall_right','wall_left')]:
-                nx,ny=x+dx,y+dy
-                if 0<=nx<size and 0<=ny<size and not getattr(t,wt):
-                    if not vis[ny][nx]:
-                        vis[ny][nx]=True
-                        q.append((nx,ny))
+        dfs(self.size // 2, self.size // 2)
 
-        for y in range(size):
-            for x in range(size):
-                if not vis[y][x]:
-                    self.grid[y][x].point=False
-
-    def draw(self, screen, ox, oy):
-        for y in range(self.size):
-            for x in range(self.size):
-                rect = pygame.Rect(ox+x*TILE_SIZE, oy+y*TILE_SIZE,
-                                   TILE_SIZE, TILE_SIZE)
-                pygame.draw.rect(screen, TILE_COLOR, rect)
-                if self.grid[y][x].point:
-                    pygame.draw.circle(screen, POINT_COLOR,
-                                       rect.center, TILE_SIZE//6)
-                t=self.grid[y][x]
-                if t.wall_top:    pygame.draw.line(screen, WALL_COLOR, rect.topleft,    rect.topright,    2)
-                if t.wall_bottom: pygame.draw.line(screen, WALL_COLOR, rect.bottomleft, rect.bottomright, 2)
-                if t.wall_left:   pygame.draw.line(screen, WALL_COLOR, rect.topleft,    rect.bottomleft, 2)
-                if t.wall_right:  pygame.draw.line(screen, WALL_COLOR, rect.topright,   rect.bottomright, 2)
-    
     def _add_extra_passages(self, extra=5):
         count = 0
         size = self.size
@@ -189,15 +157,32 @@ class Map:
                     t1.wall_bottom = False
                     t2.wall_top = False
                     count += 1
-    def __init__(self, level):
-        self.level = level
-        self.size = 5 + level - 1
-        self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
-        self._gen_maze()
-        self._add_extra_passages(extra=self.level + 3)
-        self._place_points()
-        self._mark_accessible()
 
+    def _break_long_walls(self, max_len=3):
+        
+        for y in range(self.size):
+            count = 0
+            for x in range(self.size - 1):
+                if self.grid[y][x].wall_right and self.grid[y][x+1].wall_left:
+                    count += 1
+                    if count >= max_len:
+                        self.grid[y][x].wall_right = False
+                        self.grid[y][x+1].wall_left = False
+                        count = 0
+                else:
+                    count = 0
+        
+        for x in range(self.size):
+            count = 0
+            for y in range(self.size - 1):
+                if self.grid[y][x].wall_bottom and self.grid[y+1][x].wall_top:
+                    count += 1
+                    if count >= max_len:
+                        self.grid[y][x].wall_bottom = False
+                        self.grid[y+1][x].wall_top = False
+                        count = 0
+                else:
+                    count = 0
 
 class Game:
     def calculate_offset(self):
@@ -208,10 +193,10 @@ class Game:
     def __init__(self):
         pygame.init()
         self.level = 1
-        self.map   = Map(self.level)
+        self.map = Map(self.level)
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.calculate_offset()
-        cx,cy = self.map.size//2, self.map.size//2
+        cx, cy = self.map.size//2, self.map.size//2
         self.ghosts = [Ghost(cx, cy)]
         self.player = Player(cx, min(cy+2, self.map.size-1))
         self._add_extra_ghosts()
@@ -221,8 +206,11 @@ class Game:
         self.running = True
         self.game_over = False
         self.time_game_over = 0
-        pygame.mixer.music.load("background_music.mp3")
-        pygame.mixer.music.play(-1)
+        try:
+            pygame.mixer.music.load("background_music.mp3")
+            pygame.mixer.music.play(-1)
+        except:
+            print("Nie udało się załadować muzyki.")
 
     def _add_extra_ghosts(self):
         if self.level >=3:
@@ -231,12 +219,14 @@ class Game:
             self.ghosts.append(Ghost(self.map.size-1,0,"duch2.png"))
 
     def next_level(self):
-        level = pygame.mixer.Sound("level_up.mp3")
-        pygame.mixer.Sound.play(level)
+        try:
+            pygame.mixer.Sound("level_up.mp3").play()
+        except: pass
         self.level += 1
         if self.level > MAX_LEVEL:
-            victory = pygame.mixer.Sound("victory.mp3")
-            pygame.mixer.Sound.play(victory)
+            try:
+                pygame.mixer.Sound("victory.mp3").play()
+            except: pass
             self.game_over = True
             return
         self.map = Map(self.level)
@@ -269,26 +259,26 @@ class Game:
         if tile.point:
             self.player.score += 1
             tile.point = False
-        
         if not any(tile.point for row in self.map.grid for tile in row):
             self.next_level()
-        
         for g in self.ghosts:
             g.move_towards(self.player, self.map)
             if g.x == self.player.x and g.y == self.player.y:
-                ouch = pygame.mixer.Sound("ouch.mp3")
-                pygame.mixer.Sound.play(ouch)
+                try:
+                    pygame.mixer.Sound("ouch.mp3").play()
+                except: pass
                 self.player.lives -= 1
                 if self.player.lives <= 0:
-                    over = pygame.mixer.Sound("game_over.mp3")
-                    over.set_volume(0.3)
-                    pygame.mixer.Sound.play(over)
+                    try:
+                        s = pygame.mixer.Sound("game_over.mp3")
+                        s.set_volume(0.3)
+                        s.play()
+                    except: pass
                     self.game_over = True
                     self.time_game_over = time.time()
                 else:
-                   cx,cy = self.map.size//2, min(self.map.size // 2 + 2, self.map.size - 1)
-                   self.player.x, self.player.y = cx, cy
-                   #time.sleep(0.25) 
+                    cx, cy = self.map.size//2, min(self.map.size // 2 + 2, self.map.size - 1)
+                    self.player.x, self.player.y = cx, cy
 
     def draw_ui(self):
         txt = self.font.render(f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}", True, FONT_COLOR)
@@ -299,12 +289,12 @@ class Game:
             self.handle_events()
             self.update()
             self.screen.fill(SCREEN_COLOR)
-            if (self.game_over and self.level >= MAX_LEVEL and self.player.lives > 0):
+            if self.game_over and self.level >= MAX_LEVEL and self.player.lives > 0:
                 go = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
-                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))  
+                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
             elif self.game_over:
                 go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
-                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))   
+                self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
             else:
                 self.map.draw(self.screen, self.ox, self.oy)
                 for g in self.ghosts:
