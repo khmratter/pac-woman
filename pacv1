@@ -284,11 +284,9 @@ class Game:
     #dodaje duchy na wyższych poziomach
     def _add_extra_ghosts(self):
         if self.level >= 3:
-            self.ghosts.append(Ghost(0, 0, "duch1.png", ghost_type="ghost1"))
+            self.ghosts.append(Ghost(self.map.size - 1, 0, "duch1.png", ghost_type="ghost2"))
         if self.level >= 5:
-            self.ghosts.append(Ghost(self.map.size - 1, 0, "duch2.png", ghost_type="ghost2"))
-        if self.level >= 6:
-            self.ghosts.append(Ghost(self.map.size - 2, self.map.size - 2, "duch3.png", ghost_type="ghost3"))
+            self.ghosts.append(Ghost(self.map.size - 2, self.map.size - 2, "duch2.png", ghost_type="ghost3"))
 
     def next_level(self):
         try:
