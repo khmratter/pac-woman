@@ -4,8 +4,9 @@ import time
 from config import TILE_SIZE
 from collections import deque
 
+
 class Ghost:
-    def __init__(self, x, y, image_file="duch.png", ghost_type=None):
+    def __init__(self, x, y, image_file="../img/duch.png", ghost_type=None):
         self.x = x
         self.y = y
         self.image = pygame.image.load(image_file).convert_alpha()
@@ -16,11 +17,13 @@ class Ghost:
         self.special_start_time = 0
 
     def can_pass_walls(self):
-        return self.special_active and self.ghost_type in ['ghost2', 'ghost3']
+        return self.special_active and self.ghost_type in ["ghost2", "ghost3"]
 
     def move_towards(self, player, map_obj):
         now = time.time()
-        speed_delay = 0.25 if self.special_active and self.ghost_type == 'ghost1' else 0.5
+        speed_delay = (
+            0.25 if self.special_active and self.ghost_type == "ghost1" else 0.5
+        )
         if now - self.last_move < speed_delay:
             return
         self.last_move = now
@@ -32,10 +35,14 @@ class Ghost:
                 return True
             c = map_obj.grid[y1][x1]
             t = map_obj.grid[y2][x2]
-            if x2 > x1 and (c.wall_right or t.wall_left): return False
-            if x2 < x1 and (c.wall_left or t.wall_right): return False
-            if y2 > y1 and (c.wall_bottom or t.wall_top): return False
-            if y2 < y1 and (c.wall_top or t.wall_bottom): return False
+            if x2 > x1 and (c.wall_right or t.wall_left):
+                return False
+            if x2 < x1 and (c.wall_left or t.wall_right):
+                return False
+            if y2 > y1 and (c.wall_bottom or t.wall_top):
+                return False
+            if y2 < y1 and (c.wall_top or t.wall_bottom):
+                return False
             return True
 
         def bfs_path(start, goal):
@@ -78,7 +85,6 @@ class Ghost:
                 self.x, self.y = nx, ny
                 break
 
-
     def update_special_state(self, current_time):
         if self.special_active and current_time - self.special_start_time >= 3:
             self.special_active = False
@@ -87,9 +93,15 @@ class Ghost:
             self.special_start_time = current_time
 
     def draw(self, screen, ox, oy):
-        if self.special_active and self.ghost_type == 'ghost3':
+        if self.special_active and self.ghost_type == "ghost3":
             for dx in range(2):
                 for dy in range(2):
-                    screen.blit(self.image, (ox + (self.x + dx) * TILE_SIZE, oy + (self.y + dy) * TILE_SIZE))
+                    screen.blit(
+                        self.image,
+                        (
+                            ox + (self.x + dx) * TILE_SIZE,
+                            oy + (self.y + dy) * TILE_SIZE,
+                        ),
+                    )
         elif not (self.special_active and int(time.time() * 5) % 2 == 0):
             screen.blit(self.image, (ox + self.x * TILE_SIZE, oy + self.y * TILE_SIZE))
