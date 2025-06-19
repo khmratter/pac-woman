@@ -63,7 +63,8 @@ class Game:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 self.running = False
-            if not self.game_over and e.type == pygame.KEYDOWN:
+
+            elif e.type == pygame.KEYDOWN and not self.game_over:
                 if e.key == pygame.K_SPACE:
                     self.next_level()
                 elif e.key == pygame.K_UP:
@@ -74,6 +75,14 @@ class Game:
                     self.player.move(-1, 0, self.map)
                 elif e.key == pygame.K_RIGHT:
                     self.player.move(1, 0, self.map)
+
+            elif e.type == pygame.MOUSEBUTTONDOWN and self.game_over:
+                mx, my = e.pos
+                if self.restart_btn.collidepoint(mx, my):
+                    self.reset_game()
+                elif self.quit_btn.collidepoint(mx, my):
+                    self.running = False
+
 
     def update(self):
         if self.game_over:
@@ -117,22 +126,48 @@ class Game:
 
     def render(self):
         self.screen.fill(SCREEN_COLOR)
+
         if self.game_over and self.level > MAX_LEVEL and self.player.lives > 0:
             go = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
             self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
         elif self.game_over:
             go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
             self.screen.blit(go, ((WINDOW_WIDTH - go.get_width()) // 2, (WINDOW_HEIGHT - go.get_height()) // 2))
+
+            self.restart_btn = pygame.Rect(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 40, 200, 40)
+            self.quit_btn = pygame.Rect(WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 100, 200, 40)
+
+            pygame.draw.rect(self.screen, (255, 105, 180), self.restart_btn, border_radius=12)
+            pygame.draw.rect(self.screen, (200, 0, 0), self.quit_btn, border_radius=12)
+
+            restart_txt = self.font.render("Restart", True, (255, 255, 255))
+            quit_txt = self.font.render("Zakończ", True, (255, 255, 255))
+
+            self.screen.blit(restart_txt, (self.restart_btn.centerx - restart_txt.get_width() // 2,
+                                        self.restart_btn.centery - restart_txt.get_height() // 2))
+            self.screen.blit(quit_txt, (self.quit_btn.centerx - quit_txt.get_width() // 2,
+                                        self.quit_btn.centery - quit_txt.get_height() // 2))
         else:
             self.map.draw(self.screen, self.ox, self.oy)
             for g in self.ghosts:
                 g.draw(self.screen, self.ox, self.oy)
             self.player.draw(self.screen, self.ox, self.oy)
             self.draw_ui()
+
         pygame.display.flip()
 
+
     def handle_game_over(self):
-        if self.game_over and self.time_game_over:
-            if time.time() - self.time_game_over > 10:
-                pygame.mixer.music.stop()
-                self.running = False
+        pass
+    
+    def reset_game(self):
+        self.level = 1
+        self.map = Map(self.level)
+        self.calculate_offset()
+        cx, cy = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(cx, cy)]
+        self.player = Player(cx, min(cy + 2, self.map.size - 1))
+        self._add_extra_ghosts()
+        self.running = True
+        self.game_over = False
+        self.time_game_over = 0
