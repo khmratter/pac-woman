@@ -2,6 +2,7 @@ import pygame
 import random
 import time
 from config import TILE_SIZE
+from collections import deque
 
 class Ghost:
     def __init__(self, x, y, image_file="duch.png", ghost_type=None):
