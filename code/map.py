@@ -9,7 +9,6 @@ class Map:
         self.level = level
         self.size = 5 + level - 1
         self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
-        print(len(self.grid[0]))
         self._gen_maze()
         self._add_extra_passages(extra=self.level + 3)
         self._break_long_walls(max_len=3)
@@ -40,9 +39,15 @@ class Map:
                 current_x, current_y = x, y
                 for _ in range(steps):
                     next_x, next_y = current_x + dx, current_y + dy
-                    if 0 <= next_x < size and 0 <= next_y < size and not visited[next_y][next_x]:
+                    if (
+                        0 <= next_x < size
+                        and 0 <= next_y < size
+                        and not visited[next_y][next_x]
+                    ):
                         setattr(self.grid[current_y][current_x], f"wall_{wall}", False)
-                        setattr(self.grid[next_y][next_x], f"wall_{opposite_wall}", False)
+                        setattr(
+                            self.grid[next_y][next_x], f"wall_{opposite_wall}", False
+                        )
                         visited[next_y][next_x] = True
                         dfs(next_x, next_y)
                         break

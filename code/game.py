@@ -30,13 +30,14 @@ class Game:
         self.running = True
         self.game_over = False
         self.time_game_over = 0
+        self.victory_image_original = pygame.image.load(
+            "../img/player_win.png"
+        ).convert_alpha()
         try:
             pygame.mixer.music.load("../mp3/background_music.mp3")
             pygame.mixer.music.play(-1)
         except ImportError:
             print("Nie udało się załadować muzyki.")
-            self.victory_image_original = pygame.image.load(
-            "player_win.png").convert_alpha()
 
     def calculate_offset(self):
         ms = self.map.size * TILE_SIZE
@@ -102,7 +103,6 @@ class Game:
                 elif self.quit_btn.collidepoint(mx, my):
                     self.running = False
 
-
     def update(self):
         if self.game_over:
             return
@@ -156,39 +156,45 @@ class Game:
     def render(self):
         self.screen.fill(SCREEN_COLOR)
 
-        if self.game_over and self.level > MAX_LEVEL and self.player.lives > 0:
-            scale_factor = 0.25 
-            new_width = int(WINDOW_WIDTH * scale_factor)
+        if self.game_over:
+            if self.level > MAX_LEVEL and self.player.lives > 0:
+                scale_factor = 0.20
+                new_width = int(WINDOW_WIDTH * scale_factor)
 
-            aspect_ratio = self.victory_image_original.get_height() / self.victory_image_original.get_width()
-            new_height = int(new_width * aspect_ratio)
+                aspect_ratio = (
+                    self.victory_image_original.get_height()
+                    / self.victory_image_original.get_width()
+                )
+                new_height = int(new_width * aspect_ratio)
 
-            scaled_image = pygame.transform.smoothscale(
-                self.victory_image_original, (new_width, new_height))
+                scaled_image = pygame.transform.smoothscale(
+                    self.victory_image_original, (new_width, new_height)
+                )
 
-            img_rect = scaled_image.get_rect(center=(
-                WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
-            self.screen.blit(scaled_image, img_rect)
+                img_rect = scaled_image.get_rect(
+                    center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50)
+                )
+                self.screen.blit(scaled_image, img_rect)
 
-            victory_text = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
-            text_x = (WINDOW_WIDTH - victory_text.get_width()) // 2
-            text_y = img_rect.bottom + 10
-            self.screen.blit(victory_text, (text_x, text_y))
+                victory_text = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
+                text_x = (WINDOW_WIDTH - victory_text.get_width()) // 2
+                text_y = img_rect.top - 30
+                self.screen.blit(victory_text, (text_x, text_y))
             elif self.game_over:
                 go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
                 self.screen.blit(
                     go,
                     (
                         (WINDOW_WIDTH - go.get_width()) // 2,
-                        (WINDOW_HEIGHT - go.get_height()) // 2,
+                        (WINDOW_HEIGHT - go.get_height()) // 2 - 50,
                     ),
                 )
 
             self.restart_btn = pygame.Rect(
-                WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 40, 200, 40
+                WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 50, 200, 40
             )
             self.quit_btn = pygame.Rect(
-                WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 100, 200, 40
+                WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 110, 200, 40
             )
 
             pygame.draw.rect(
@@ -216,7 +222,7 @@ class Game:
         else:
             self.map.draw(self.screen, self.ox, self.oy)
             for g in self.ghosts:
-                g.draw(self.screen, self.ox, self.oy)
+                g.draw(self.screen, self.ox, self.oy, self.map)
             self.player.draw(self.screen, self.ox, self.oy)
             self.draw_ui()
 
