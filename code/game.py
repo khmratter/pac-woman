@@ -14,7 +14,7 @@ from ghost import Ghost
 
 
 class Game:
-    def __init__(self):
+    def __init__(self) -> None:
         pygame.init()
         self.level = 1
         self.map = Map(self.level)
@@ -39,12 +39,12 @@ class Game:
         except ImportError:
             print("Nie udało się załadować muzyki.")
 
-    def calculate_offset(self):
+    def calculate_offset(self) -> None:
         ms = self.map.size * TILE_SIZE
         self.ox = (WINDOW_WIDTH - ms) // 2
         self.oy = (WINDOW_HEIGHT - ms) // 2
 
-    def _add_extra_ghosts(self):
+    def _add_extra_ghosts(self) -> None:
         if self.level >= 3:
             self.ghosts.append(
                 Ghost(self.map.size - 1, 0, "../img/duch1.png", ghost_type="ghost2")
@@ -59,7 +59,7 @@ class Game:
                 )
             )
 
-    def next_level(self):
+    def next_level(self) -> None:
         try:
             pygame.mixer.Sound("../mp3/level_up.mp3").play()
         except ImportError:
@@ -79,7 +79,7 @@ class Game:
         self.player.x, self.player.y = cx, min(cy + 2, self.map.size - 1)
         self._add_extra_ghosts()
 
-    def handle_events(self):
+    def handle_events(self) -> None:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 self.running = False
@@ -103,7 +103,7 @@ class Game:
                 elif self.quit_btn.collidepoint(mx, my):
                     self.running = False
 
-    def update(self):
+    def update(self) -> None:
         if self.game_over:
             return
         tile = self.map.grid[self.player.y][self.player.x]
@@ -145,7 +145,7 @@ class Game:
                     )
                     self.player.x, self.player.y = cx, cy
 
-    def draw_ui(self):
+    def draw_ui(self) -> None:
         txt = self.font.render(
             f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
             True,
@@ -153,7 +153,7 @@ class Game:
         )
         self.screen.blit(txt, (10, 10))
 
-    def render(self):
+    def render(self) -> None:
         self.screen.fill(SCREEN_COLOR)
 
         if self.game_over:
@@ -228,10 +228,10 @@ class Game:
 
         pygame.display.flip()
 
-    def handle_game_over(self):
+    def handle_game_over(self) -> None:
         pass
 
-    def reset_game(self):
+    def reset_game(self) -> None:
         self.level = 1
         self.map = Map(self.level)
         self.calculate_offset()

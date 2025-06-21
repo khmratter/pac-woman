@@ -1,12 +1,21 @@
 import pygame
 import random
 import time
+from map import Map
+from player import Player
 from config import TILE_SIZE
 from collections import deque
+from typing import Optional
 
 
 class Ghost:
-    def __init__(self, x, y, image_file="../img/duch.png", ghost_type=None):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        image_file: str = "../img/duch.png",
+        ghost_type: Optional[str] = None,
+    ) -> None:
         self.x = x
         self.y = y
         self.image = pygame.image.load(image_file).convert_alpha()
@@ -21,10 +30,10 @@ class Ghost:
         self.special_active = False
         self.special_start_time = 0
 
-    def can_pass_walls(self):
+    def can_pass_walls(self) -> bool:
         return self.special_active and self.ghost_type in ["ghost2", "ghost3"]
 
-    def move_towards(self, player, map_obj):
+    def move_towards(self, player: Player, map_obj: Map) -> None:
         now = time.time()
         speed_delay = (
             0.25 if self.special_active and self.ghost_type == "ghost1" else 0.5
@@ -33,7 +42,7 @@ class Ghost:
             return
         self.last_move = now
 
-        def can(x1, y1, x2, y2):
+        def can(x1: int, y1: int, x2: int, y2: int) -> bool:
             if not (0 <= x2 < map_obj.size and 0 <= y2 < map_obj.size):
                 return False
             if self.can_pass_walls():
@@ -50,7 +59,9 @@ class Ghost:
                 return False
             return True
 
-        def bfs_path(start, goal):
+        def bfs_path(
+            start: tuple[int, int], goal: tuple[int, int]
+        ) -> Optional[list[tuple[int, int]]]:
             visited = set()
             queue = deque()
             queue.append((start, []))
@@ -90,14 +101,14 @@ class Ghost:
                 self.x, self.y = nx, ny
                 break
 
-    def update_special_state(self, current_time):
+    def update_special_state(self, current_time: float) -> None:
         if self.special_active and current_time - self.special_start_time >= 3:
             self.special_active = False
         elif not self.special_active and int(current_time) % 10 == 0:
             self.special_active = True
             self.special_start_time = current_time
 
-    def draw(self, screen, ox, oy, map_obj):
+    def draw(self, screen: pygame.Surface, ox: int, oy: int, map_obj: Map) -> None:
         x_pos = ox + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
         y_pos = oy + self.y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
 

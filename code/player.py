@@ -50,7 +50,7 @@ class Player:
                 return
             self.x, self.y = new_x, new_y
 
-    def draw(self, screen, ox, oy) -> pygame.Rect:
+    def draw(self, screen: pygame.Surface, ox: int, oy: int) -> None:
         if self.direction == "right":
             image = self.base_image
         elif self.direction == "left":

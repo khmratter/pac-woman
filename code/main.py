@@ -2,7 +2,7 @@ from game import Game
 import pygame
 
 
-def main():
+def main() -> None:
     game = Game()
     while game.running:
         game.handle_events()
