@@ -6,11 +6,16 @@ from collections import deque
 
 
 class Ghost:
-    def __init__(self, x, y, image_file="../img/duch.png", ghost_type=None):
+    def __init__(self, x, y, image_file="duch.png", ghost_type=None):
         self.x = x
         self.y = y
         self.image = pygame.image.load(image_file).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (TILE_SIZE, TILE_SIZE))
+        
+        margin = 8  
+        size = TILE_SIZE - margin
+        self.image = pygame.transform.smoothscale(self.image, (size, size))
+        self.image_size = size  
+        
         self.last_move = time.time()
         self.ghost_type = ghost_type
         self.special_active = False
@@ -93,15 +98,14 @@ class Ghost:
             self.special_start_time = current_time
 
     def draw(self, screen, ox, oy):
-        if self.special_active and self.ghost_type == "ghost3":
+        x_pos = ox + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+        y_pos = oy + self.y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+
+        if self.special_active and self.ghost_type == 'ghost3':
             for dx in range(2):
                 for dy in range(2):
-                    screen.blit(
-                        self.image,
-                        (
-                            ox + (self.x + dx) * TILE_SIZE,
-                            oy + (self.y + dy) * TILE_SIZE,
-                        ),
-                    )
+                    sx = ox + (self.x + dx) * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+                    sy = oy + (self.y + dy) * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+                    screen.blit(self.image, (sx, sy))
         elif not (self.special_active and int(time.time() * 5) % 2 == 0):
-            screen.blit(self.image, (ox + self.x * TILE_SIZE, oy + self.y * TILE_SIZE))
+            screen.blit(self.image, (x_pos, y_pos))
