@@ -35,6 +35,8 @@ class Game:
             pygame.mixer.music.play(-1)
         except ImportError:
             print("Nie udało się załadować muzyki.")
+         self.victory_image_original = pygame.image.load(
+            "player_win.png").convert_alpha()
 
     def calculate_offset(self):
         ms = self.map.size * TILE_SIZE
@@ -153,16 +155,24 @@ class Game:
     def render(self):
         self.screen.fill(SCREEN_COLOR)
 
-        if self.game_over:
-            if self.level > MAX_LEVEL and self.player.lives > 0:
-                go = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
-                self.screen.blit(
-                    go,
-                    (
-                        (WINDOW_WIDTH - go.get_width()) // 2,
-                        (WINDOW_HEIGHT - go.get_height()) // 2,
-                    ),
-                )
+        if self.game_over and self.level > MAX_LEVEL and self.player.lives > 0:
+            scale_factor = 0.25 
+            new_width = int(WINDOW_WIDTH * scale_factor)
+
+            aspect_ratio = self.victory_image_original.get_height() / self.victory_image_original.get_width()
+            new_height = int(new_width * aspect_ratio)
+
+            scaled_image = pygame.transform.smoothscale(
+                self.victory_image_original, (new_width, new_height))
+
+            img_rect = scaled_image.get_rect(center=(
+                WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
+            self.screen.blit(scaled_image, img_rect)
+
+            victory_text = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
+            text_x = (WINDOW_WIDTH - victory_text.get_width()) // 2
+            text_y = img_rect.bottom + 10
+            self.screen.blit(victory_text, (text_x, text_y))
             elif self.game_over:
                 go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
                 self.screen.blit(
