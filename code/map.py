@@ -5,10 +5,11 @@ from config import TILE_SIZE, TILE_COLOR, POINT_COLOR, WALL_COLOR
 
 
 class Map:
-    def __init__(self, level):
+    def __init__(self, level: int) -> None:
         self.level = level
         self.size = 5 + level - 1
         self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
+        print(len(self.grid[0]))
         self._gen_maze()
         self._add_extra_passages(extra=self.level + 3)
         self._break_long_walls(max_len=3)
@@ -34,16 +35,16 @@ class Map:
             visited[y][x] = True
             dir_order = dirs[:]
             random.shuffle(dir_order)
-            for w, dx, dy, ow in dir_order:
+            for wall, dx, dy, opposite_wall in dir_order:
                 steps = random.randint(1, 2)
-                cx, cy = x, y
+                current_x, current_y = x, y
                 for _ in range(steps):
-                    nx, ny = cx + dx, cy + dy
-                    if 0 <= nx < size and 0 <= ny < size and not visited[ny][nx]:
-                        setattr(self.grid[cy][cx], f"wall_{w}", False)
-                        setattr(self.grid[ny][nx], f"wall_{ow}", False)
-                        visited[ny][nx] = True
-                        dfs(nx, ny)
+                    next_x, next_y = current_x + dx, current_y + dy
+                    if 0 <= next_x < size and 0 <= next_y < size and not visited[next_y][next_x]:
+                        setattr(self.grid[current_y][current_x], f"wall_{wall}", False)
+                        setattr(self.grid[next_y][next_x], f"wall_{opposite_wall}", False)
+                        visited[next_y][next_x] = True
+                        dfs(next_x, next_y)
                         break
                     else:
                         break

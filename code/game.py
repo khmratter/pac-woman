@@ -100,6 +100,7 @@ class Game:
                 elif self.quit_btn.collidepoint(mx, my):
                     self.running = False
 
+
     def update(self):
         if self.game_over:
             return
@@ -163,7 +164,7 @@ class Game:
                         (WINDOW_HEIGHT - go.get_height()) // 2,
                     ),
                 )
-            elif self.game_over:
+            else: 
                 go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
                 self.screen.blit(
                     go,

@@ -1,15 +1,16 @@
 import pygame
+from map import Map
 from config import TILE_SIZE, PLAYER_COLOR
 
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         self.score = 0
         self.lives = 3
 
-    def move(self, dx, dy, map_obj):
+    def move(self, dx: int, dy: int, map_obj: Map) -> None:
         new_x = self.x + dx
         new_y = self.y + dy
         if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:
@@ -25,7 +26,7 @@ class Player:
                 return
             self.x, self.y = new_x, new_y
 
-    def draw(self, screen, ox, oy):
+    def draw(self, screen, ox, oy) -> pygame.Rect:
         pygame.draw.rect(
             screen,
             PLAYER_COLOR,
