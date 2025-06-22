@@ -28,37 +28,37 @@ class Player:
         new_x = self.x + dx
         new_y = self.y + dy
 
-        if dx == -1:
-            self.direction = "left"
-        elif dx == 1:
-            self.direction = "right"
-        elif dy == -1:
-            self.direction = "up"
-        elif dy == 1:
-            self.direction = "down"
+        d_to_text = {
+            (-1, 0): "left",
+            (1, 0): "right",
+            (0, -1): "up",
+            (0, 1): "down",
+        }
+        self.direction = d_to_text.get((dx, dy))
 
         if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:
             current = map_obj.grid[self.y][self.x]
             target = map_obj.grid[new_y][new_x]
-            if dx == -1 and (current.wall_left or target.wall_right):
-                return
-            if dx == 1 and (current.wall_right or target.wall_left):
-                return
-            if dy == -1 and (current.wall_top or target.wall_bottom):
-                return
-            if dy == 1 and (current.wall_bottom or target.wall_top):
+            walls_blocking = {
+                (-1, 0): ("wall_left", "wall_right"),
+                (1, 0): ("wall_right", "wall_left"),
+                (0, -1): ("wall_top", "wall_bottom"),
+                (0, 1): ("wall_bottom", "wall_top"),
+            }
+            walls = walls_blocking.get((dx, dy))
+            current_wall, target_wall = walls
+            if getattr(current, current_wall) or getattr(target, target_wall):
                 return
             self.x, self.y = new_x, new_y
 
     def draw(self, screen: pygame.Surface, ox: int, oy: int) -> None:
-        if self.direction == "right":
-            image = self.base_image
-        elif self.direction == "left":
-            image = pygame.transform.flip(self.base_image, True, False)
-        elif self.direction == "up":
-            image = pygame.transform.rotate(self.base_image, 90)
-        elif self.direction == "down":
-            image = pygame.transform.rotate(self.base_image, -90)
+        directions = {
+            "right": lambda png: png,
+            "left": lambda png: pygame.transform.flip(png, True, False),
+            "up": lambda png: pygame.transform.rotate(png, 90),
+            "down": lambda png: pygame.transform.rotate(png, -90),
+        }
+        image = directions[self.direction](self.base_image)
 
         image_rect = image.get_rect()
         x_pos = ox + self.x * TILE_SIZE + (TILE_SIZE - image_rect.width) // 2

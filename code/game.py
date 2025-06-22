@@ -51,12 +51,7 @@ class Game:
             )
         if self.level >= 5:
             self.ghosts.append(
-                Ghost(
-                    self.map.size - 2,
-                    self.map.size - 2,
-                    "../img/duch2.png",
-                    ghost_type="ghost3",
-                )
+                Ghost(self.map.size - 2, self.map.size - 2, "../img/duch2.png", ghost_type="ghost3")
             )
 
     def next_level(self) -> None:
@@ -87,14 +82,16 @@ class Game:
             elif e.type == pygame.KEYDOWN and not self.game_over:
                 if e.key == pygame.K_SPACE:
                     self.next_level()
-                elif e.key == pygame.K_UP:
-                    self.player.move(0, -1, self.map)
-                elif e.key == pygame.K_DOWN:
-                    self.player.move(0, 1, self.map)
-                elif e.key == pygame.K_LEFT:
-                    self.player.move(-1, 0, self.map)
-                elif e.key == pygame.K_RIGHT:
-                    self.player.move(1, 0, self.map)
+                else:
+                    keys = {
+                        pygame.K_UP: (0, -1),
+                        pygame.K_DOWN: (0, 1),
+                        pygame.K_LEFT: (-1, 0),
+                        pygame.K_RIGHT: (1, 0),
+                    }
+                    if e.key in keys:
+                        dx, dy = keys[e.key]
+                        self.player.move(dx, dy, self.map)
 
             elif e.type == pygame.MOUSEBUTTONDOWN and self.game_over:
                 mx, my = e.pos
@@ -131,9 +128,9 @@ class Game:
                 self.player.lives -= 1
                 if self.player.lives <= 0:
                     try:
-                        s = pygame.mixer.Sound("../mp3/game_over.mp3")
-                        s.set_volume(0.3)
-                        s.play()
+                        sound_over = pygame.mixer.Sound("../mp3/game_over.mp3")
+                        sound_over.set_volume(0.3)
+                        sound_over.play()
                     except ImportError:
                         pass
                     self.game_over = True

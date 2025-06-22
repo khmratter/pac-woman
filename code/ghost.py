@@ -9,13 +9,7 @@ from typing import Optional
 
 
 class Ghost:
-    def __init__(
-        self,
-        x: int,
-        y: int,
-        image_file: str = "../img/duch.png",
-        ghost_type: Optional[str] = None,
-    ) -> None:
+    def __init__(self, x: int, y: int, image_file: str = "../img/duch.png", ghost_type: Optional[str] = None) -> None:
         self.x = x
         self.y = y
         self.image = pygame.image.load(image_file).convert_alpha()
@@ -47,15 +41,22 @@ class Ghost:
                 return False
             if self.can_pass_walls():
                 return True
-            c = map_obj.grid[y1][x1]
-            t = map_obj.grid[y2][x2]
-            if x2 > x1 and (c.wall_right or t.wall_left):
-                return False
-            if x2 < x1 and (c.wall_left or t.wall_right):
-                return False
-            if y2 > y1 and (c.wall_bottom or t.wall_top):
-                return False
-            if y2 < y1 and (c.wall_top or t.wall_bottom):
+
+            curr = map_obj.grid[y1][x1]
+            targ = map_obj.grid[y2][x2]
+            diff_x = x2 - x1
+            diff_y = y2 - y1
+
+            walls_blocking = {
+                (1, 0): ("wall_right", "wall_left"),
+                (-1, 0): ("wall_left", "wall_right"),
+                (0, 1): ("wall_bottom", "wall_top"),
+                (0, -1): ("wall_top", "wall_bottom"),
+            }
+            walls = walls_blocking.get((diff_x, diff_y))
+
+            current_wall, target_wall = walls
+            if getattr(curr, current_wall) or getattr(targ, target_wall):
                 return False
             return True
 

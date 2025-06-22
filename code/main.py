@@ -9,7 +9,7 @@ def main() -> None:
         game.update()
         game.render()
         game.handle_game_over()
-        game.clock.tick(60)
+        game.clock.tick(60)  # 60 fps
     pygame.quit()
 
 

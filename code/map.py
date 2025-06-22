@@ -125,27 +125,13 @@ class Map:
                         (tx + TILE_SIZE // 2, ty + TILE_SIZE // 2),
                         TILE_SIZE // 5,
                     )
-                if tile.wall_top:
-                    pygame.draw.line(
-                        screen, WALL_COLOR, (tx, ty), (tx + TILE_SIZE, ty), 2
-                    )
-                if tile.wall_bottom:
-                    pygame.draw.line(
-                        screen,
-                        WALL_COLOR,
-                        (tx, ty + TILE_SIZE),
-                        (tx + TILE_SIZE, ty + TILE_SIZE),
-                        2,
-                    )
-                if tile.wall_left:
-                    pygame.draw.line(
-                        screen, WALL_COLOR, (tx, ty), (tx, ty + TILE_SIZE), 2
-                    )
-                if tile.wall_right:
-                    pygame.draw.line(
-                        screen,
-                        WALL_COLOR,
-                        (tx + TILE_SIZE, ty),
-                        (tx + TILE_SIZE, ty + TILE_SIZE),
-                        2,
-                    )
+                walls = [
+                    ("wall_top", ((tx, ty), (tx + TILE_SIZE, ty))),
+                    ("wall_bottom", ((tx, ty + TILE_SIZE), (tx + TILE_SIZE, ty + TILE_SIZE))),
+                    ("wall_left", ((tx, ty), (tx, ty + TILE_SIZE))),
+                    ("wall_right",((tx + TILE_SIZE, ty), (tx + TILE_SIZE, ty + TILE_SIZE))),
+                ]
+
+                for pos, coord in walls:
+                    if getattr(tile, pos):
+                        pygame.draw.line(screen, WALL_COLOR, coord[0], coord[1], 2)
