@@ -35,16 +35,16 @@ class Map:
             visited[y][x] = True
             dir_order = dirs[:]
             random.shuffle(dir_order)
-            for w, dx, dy, ow in dir_order:
+            for wall, dx, dy, opposite_wall in dir_order:
                 steps = random.randint(1, 3)
-                cx, cy = x, y
+                current_x, current_y = x, y
                 for _ in range(steps):
-                    nx, ny = cx + dx, cy + dy
-                    if 0 <= nx < size and 0 <= ny < size and not visited[ny][nx]:
-                        setattr(self.grid[cy][cx], f"wall_{w}", False)
-                        setattr(self.grid[ny][nx], f"wall_{ow}", False)
-                        visited[ny][nx] = True
-                        dfs(nx, ny)
+                    new_x, new_y = current_x + dx, current_y + dy
+                    if 0 <= new_x < size and 0 <= new_y < size and not visited[new_y][new_x]:
+                        setattr(self.grid[current_y][current_x], f"wall_{wall}", False)
+                        setattr(self.grid[new_y][new_x], f"wall_{opposite_wall}", False)
+                        visited[new_y][new_x] = True
+                        dfs(new_x, new_y)
                         break
                     else:
                         break
@@ -58,18 +58,18 @@ class Map:
         while count < extra:
             x = random.randint(0, size - 2)
             y = random.randint(0, size - 2)
-            t1 = self.grid[y][x]
+            tile1 = self.grid[y][x]
             if random.choice([True, False]):
-                t2 = self.grid[y][x + 1]
-                if t1.wall_right and t2.wall_left:
-                    t1.wall_right = False
-                    t2.wall_left = False
+                tile2 = self.grid[y][x + 1]
+                if tile1.wall_right and tile2.wall_left:
+                    tile1.wall_right = False
+                    tile2.wall_left = False
                     count += 1
             else:
-                t2 = self.grid[y + 1][x]
-                if t1.wall_bottom and t2.wall_top:
-                    t1.wall_bottom = False
-                    t2.wall_top = False
+                tile2 = self.grid[y + 1][x]
+                if tile1.wall_bottom and tile2.wall_top:
+                    tile1.wall_bottom = False
+                    tile2.wall_top = False
                     count += 1
 
     # Przerywa zbyt długie ściany
@@ -112,26 +112,26 @@ class Map:
         pass
 
     # Rysowanie planszy
-    def draw(self, screen: pygame.Surface, ox: int, oy: int) -> None:
+    def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         for y in range(self.size):
             for x in range(self.size):
                 tile = self.grid[y][x]
-                tx, ty = ox + x * TILE_SIZE, oy + y * TILE_SIZE
-                pygame.draw.rect(screen, TILE_COLOR, (tx, ty, TILE_SIZE, TILE_SIZE))
+                tile_x, tile_y = offset_x + x * TILE_SIZE, offset_y + y * TILE_SIZE
+                pygame.draw.rect(screen, TILE_COLOR, (tile_x, tile_y, TILE_SIZE, TILE_SIZE))
                 if tile.point:
                     pygame.draw.circle(
                         screen,
                         POINT_COLOR,
-                        (tx + TILE_SIZE // 2, ty + TILE_SIZE // 2),
+                        (tile_x + TILE_SIZE // 2, tile_y + TILE_SIZE // 2),
                         TILE_SIZE // 5,
                     )
                 walls = [
-                    ("wall_top", ((tx, ty), (tx + TILE_SIZE, ty))),
-                    ("wall_bottom", ((tx, ty + TILE_SIZE), (tx + TILE_SIZE, ty + TILE_SIZE))),
-                    ("wall_left", ((tx, ty), (tx, ty + TILE_SIZE))),
-                    ("wall_right",((tx + TILE_SIZE, ty), (tx + TILE_SIZE, ty + TILE_SIZE))),
+                    ("wall_top", ((tile_x, tile_y), (tile_x + TILE_SIZE, tile_y))),
+                    ("wall_bottom", ((tile_x, tile_y + TILE_SIZE), (tile_x + TILE_SIZE, tile_y + TILE_SIZE))),
+                    ("wall_left", ((tile_x, tile_y), (tile_x, tile_y + TILE_SIZE))),
+                    ("wall_right",((tile_x + TILE_SIZE, tile_y), (tile_x + TILE_SIZE, tile_y + TILE_SIZE))),
                 ]
 
-                for pos, coord in walls:
-                    if getattr(tile, pos):
+                for wall_position, coord in walls:
+                    if getattr(tile, wall_position):
                         pygame.draw.line(screen, WALL_COLOR, coord[0], coord[1], 2)

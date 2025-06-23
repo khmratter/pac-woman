@@ -20,9 +20,9 @@ class Game:
         self.map = Map(self.level)
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.calculate_offset()
-        cx, cy = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(cx, cy)]
-        self.player = Player(cx, min(cy + 2, self.map.size - 1))
+        center_x, center_y = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(center_x, center_y)]
+        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))
         self._add_extra_ghosts()
         pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
@@ -40,9 +40,9 @@ class Game:
             print("Nie udało się załadować muzyki.")
 
     def calculate_offset(self) -> None:
-        ms = self.map.size * TILE_SIZE
-        self.ox = (WINDOW_WIDTH - ms) // 2
-        self.oy = (WINDOW_HEIGHT - ms) // 2
+        map_size_in_pixels = self.map.size * TILE_SIZE
+        self.ox = (WINDOW_WIDTH - map_size_in_pixels) // 2
+        self.oy = (WINDOW_HEIGHT - map_size_in_pixels) // 2
 
     def _add_extra_ghosts(self) -> None:
         if self.level >= 3:
@@ -69,9 +69,9 @@ class Game:
             return
         self.map = Map(self.level)
         self.calculate_offset()
-        cx, cy = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(cx, cy)]
-        self.player.x, self.player.y = cx, min(cy + 2, self.map.size - 1)
+        center_x, center_y = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(center_x, center_y)]
+        self.player.x, self.player.y = center_x, min(center_y + 2, self.map.size - 1)
         self._add_extra_ghosts()
 
     def handle_events(self) -> None:
@@ -90,14 +90,14 @@ class Game:
                         pygame.K_RIGHT: (1, 0),
                     }
                     if e.key in keys:
-                        dx, dy = keys[e.key]
-                        self.player.move(dx, dy, self.map)
+                        dest_x, dest_y = keys[e.key]
+                        self.player.move(dest_x, dest_y, self.map)
 
             elif e.type == pygame.MOUSEBUTTONDOWN and self.game_over:
-                mx, my = e.pos
-                if self.restart_btn.collidepoint(mx, my):
+                mouse_x, mouse_y = e.pos
+                if self.restart_btn.collidepoint(mouse_x, mouse_y):
                     self.reset_game()
-                elif self.quit_btn.collidepoint(mx, my):
+                elif self.quit_btn.collidepoint(mouse_x, mouse_y):
                     self.running = False
 
     def update(self) -> None:
@@ -111,14 +111,14 @@ class Game:
             self.next_level()
 
         now = time.time()
-        for g in self.ghosts:
-            g.update_special_state(now)
-            g.move_towards(self.player, self.map)
-            collision = (g.x == self.player.x and g.y == self.player.y) or (
-                g.ghost_type == "ghost3"
-                and g.special_active
-                and self.player.x in [g.x, g.x + 1]
-                and self.player.y in [g.y, g.y + 1]
+        for ghost in self.ghosts:
+            ghost.update_special_state(now)
+            ghost.move_towards(self.player, self.map)
+            collision = (ghost.x == self.player.x and ghost.y == self.player.y) or (
+                ghost.ghost_type == "ghost3"
+                and ghost.special_active
+                and self.player.x in [ghost.x, ghost.x + 1]
+                and self.player.y in [ghost.y, ghost.y + 1]
             )
             if collision:
                 try:
@@ -136,11 +136,11 @@ class Game:
                     self.game_over = True
                     self.time_game_over = now
                 else:
-                    cx, cy = (
+                    curr_x, curr_y = (
                         self.map.size // 2,
                         min(self.map.size // 2 + 2, self.map.size - 1),
                     )
-                    self.player.x, self.player.y = cx, cy
+                    self.player.x, self.player.y = curr_x, curr_y
 
     def draw_ui(self) -> None:
         txt = self.font.render(
@@ -178,12 +178,12 @@ class Game:
                 text_y = img_rect.top - 30
                 self.screen.blit(victory_text, (text_x, text_y))
             elif self.game_over:
-                go = self.font.render("KONIEC GRY!", True, (255, 50, 50))
+                game_over_text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
                 self.screen.blit(
-                    go,
+                    game_over_text,
                     (
-                        (WINDOW_WIDTH - go.get_width()) // 2,
-                        (WINDOW_HEIGHT - go.get_height()) // 2 - 50,
+                        (WINDOW_WIDTH - game_over_text.get_width()) // 2,
+                        (WINDOW_HEIGHT - game_over_text.get_height()) // 2 - 50,
                     ),
                 )
 
@@ -218,8 +218,8 @@ class Game:
             )
         else:
             self.map.draw(self.screen, self.ox, self.oy)
-            for g in self.ghosts:
-                g.draw(self.screen, self.ox, self.oy, self.map)
+            for ghost in self.ghosts:
+                ghost.draw(self.screen, self.ox, self.oy, self.map)
             self.player.draw(self.screen, self.ox, self.oy)
             self.draw_ui()
 
@@ -232,9 +232,9 @@ class Game:
         self.level = 1
         self.map = Map(self.level)
         self.calculate_offset()
-        cx, cy = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(cx, cy)]
-        self.player = Player(cx, min(cy + 2, self.map.size - 1))
+        center_x, center_y = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(center_x, center_y)]
+        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))
         self._add_extra_ghosts()
         self.running = True
         self.game_over = False

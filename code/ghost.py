@@ -60,26 +60,24 @@ class Ghost:
                 return False
             return True
 
-        def bfs_path(
-            start: tuple[int, int], goal: tuple[int, int]
-        ) -> Optional[list[tuple[int, int]]]:
+        def bfs_path(start: tuple[int, int], goal: tuple[int, int]) -> Optional[list[tuple[int, int]]]:
             visited = set()
             queue = deque()
             queue.append((start, []))
 
             while queue:
-                (cx, cy), path = queue.popleft()
-                if (cx, cy) in visited:
+                (current_x, current_y), path = queue.popleft()
+                if (current_x, current_y) in visited:
                     continue
-                visited.add((cx, cy))
+                visited.add((current_x, current_y))
 
-                if (cx, cy) == goal:
+                if (current_x, current_y) == goal:
                     return path
 
-                for dx_, dy_ in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-                    nx, ny = cx + dx_, cy + dy_
-                    if (nx, ny) not in visited and can(cx, cy, nx, ny):
-                        queue.append(((nx, ny), path + [(nx, ny)]))
+                for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                    new_x, new_y = current_x + dx, current_y + dy
+                    if (new_x, new_y) not in visited and can(current_x, current_y, new_x, new_y):
+                        queue.append(((new_x, new_y), path + [(new_x, new_y)]))
             return None
 
         path = bfs_path((self.x, self.y), (player.x, player.y))
@@ -96,8 +94,8 @@ class Ghost:
 
         dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         random.shuffle(dirs)
-        for dx_, dy_ in dirs:
-            nx, ny = self.x + dx_, self.y + dy_
+        for dest_x, dest_y in dirs:
+            nx, ny = self.x + dest_x, self.y + dest_y
             if can(self.x, self.y, nx, ny):
                 self.x, self.y = nx, ny
                 break
@@ -109,20 +107,20 @@ class Ghost:
             self.special_active = True
             self.special_start_time = current_time
 
-    def draw(self, screen: pygame.Surface, ox: int, oy: int, map_obj: Map) -> None:
-        x_pos = ox + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
-        y_pos = oy + self.y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+    def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int, map_obj: Map) -> None:
+        x_pos = offset_x + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+        y_pos = offset_y + self.y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
 
         if self.special_active and self.ghost_type == "ghost3":
             map_width = len(map_obj.grid[0])
             map_height = len(map_obj.grid)
-            for dx in range(2):
-                for dy in range(2):
-                    bx = self.x + dx
-                    by = self.y + dy
-                    if bx < map_width and by < map_height:
-                        sx = ox + bx * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
-                        sy = oy + by * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
-                        screen.blit(self.image, (sx, sy))
+            for delta_x in range(2):
+                for delta_y in range(2):
+                    big_x = self.x + delta_x
+                    big_y = self.y + delta_y
+                    if big_x < map_width and big_y < map_height:
+                        screen_x = offset_x + big_x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+                        screen_y = offset_y + big_y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
+                        screen.blit(self.image, (screen_x, screen_y))
         elif not (self.special_active and int(time.time() * 5) % 2 == 0):
             screen.blit(self.image, (x_pos, y_pos))

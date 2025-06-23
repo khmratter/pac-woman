@@ -28,13 +28,13 @@ class Player:
         new_x = self.x + dx
         new_y = self.y + dy
 
-        d_to_text = {
+        diff_to_text = {
             (-1, 0): "left",
             (1, 0): "right",
             (0, -1): "up",
             (0, 1): "down",
         }
-        self.direction = d_to_text.get((dx, dy))
+        self.direction = diff_to_text.get((dx, dy))
 
         if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:
             current = map_obj.grid[self.y][self.x]
@@ -51,7 +51,7 @@ class Player:
                 return
             self.x, self.y = new_x, new_y
 
-    def draw(self, screen: pygame.Surface, ox: int, oy: int) -> None:
+    def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         directions = {
             "right": lambda png: png,
             "left": lambda png: pygame.transform.flip(png, True, False),
@@ -61,6 +61,6 @@ class Player:
         image = directions[self.direction](self.base_image)
 
         image_rect = image.get_rect()
-        x_pos = ox + self.x * TILE_SIZE + (TILE_SIZE - image_rect.width) // 2
-        y_pos = oy + self.y * TILE_SIZE + (TILE_SIZE - image_rect.height) // 2
+        x_pos = offset_x + self.x * TILE_SIZE + (TILE_SIZE - image_rect.width) // 2
+        y_pos = offset_y + self.y * TILE_SIZE + (TILE_SIZE - image_rect.height) // 2
         screen.blit(image, (x_pos, y_pos))
