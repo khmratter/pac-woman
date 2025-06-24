@@ -1,6 +1,10 @@
 import pygame
 import time
-from config import (
+import os
+from .map import Map
+from .player import Player
+from .ghost import Ghost
+from .config import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     SCREEN_COLOR,
@@ -8,10 +12,6 @@ from config import (
     MAX_LEVEL,
     TILE_SIZE,
 )
-from map import Map
-from player import Player
-from ghost import Ghost
-
 
 class Game:
     def __init__(self) -> None:
@@ -20,9 +20,9 @@ class Game:
         self.map = Map(self.level)
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.calculate_offset()
-        center_x, center_y = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(center_x, center_y)]
-        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))
+        cx, cy = self.map.size//2, self.map.size//2
+        self.ghosts = [Ghost(cx, cy)]
+        self.player = Player(cx, min(cy+2, self.map.size-1))
         self._add_extra_ghosts()
         pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
@@ -30,50 +30,58 @@ class Game:
         self.running = True
         self.game_over = False
         self.time_game_over = 0
-        self.victory_image_original = pygame.image.load(
-            "../img/player_win.png"
-        ).convert_alpha()
+
+        base_path = os.path.dirname(__file__)
+        # load victory image
+        victory_path = os.path.abspath(os.path.join(base_path, "..", "img", "player_win.png"))
         try:
-            pygame.mixer.music.load("../mp3/background_music.mp3")
+            self.victory_image_original = pygame.image.load(victory_path).convert_alpha()
+        except (pygame.error, FileNotFoundError):
+            self.victory_image_original = pygame.Surface((100,100))
+            self.victory_image_original.fill((0,255,0))
+
+        # load background music
+        music_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "background_music.mp3"))
+        try:
+            pygame.mixer.music.load(music_path)
             pygame.mixer.music.play(-1)
-        except ImportError:
+        except pygame.error:
             print("Nie udało się załadować muzyki.")
 
     def calculate_offset(self) -> None:
-        map_size_in_pixels = self.map.size * TILE_SIZE
-        self.ox = (WINDOW_WIDTH - map_size_in_pixels) // 2
-        self.oy = (WINDOW_HEIGHT - map_size_in_pixels) // 2
+        ms = self.map.size * TILE_SIZE
+        self.ox = (WINDOW_WIDTH-ms)//2
+        self.oy = (WINDOW_HEIGHT-ms)//2
 
     def _add_extra_ghosts(self) -> None:
         if self.level >= 3:
-            self.ghosts.append(
-                Ghost(self.map.size - 1, 0, "../img/duch1.png", ghost_type="ghost2")
-            )
+            self.ghosts.append(Ghost(self.map.size-1, 0, "duch1.png", ghost_type="ghost2"))
         if self.level >= 5:
-            self.ghosts.append(
-                Ghost(self.map.size - 2, self.map.size - 2, "../img/duch2.png", ghost_type="ghost3")
-            )
+            self.ghosts.append(Ghost(self.map.size-2, self.map.size-2, "duch2.png", ghost_type="ghost3"))
 
     def next_level(self) -> None:
+        base_path = os.path.dirname(__file__)
+        # level up sound
+        lvl_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "level_up.mp3"))
         try:
-            pygame.mixer.Sound("../mp3/level_up.mp3").play()
-        except ImportError:
-            pass
+            pygame.mixer.Sound(lvl_path).play()
+        except pygame.error:
+            print("Nie udało się załadować dźwięku.")
         self.level += 1
         if self.level > MAX_LEVEL:
+            vic_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "victory.mp3"))
             try:
-                pygame.mixer.Sound("../mp3/victory.mp3").play()
-            except ImportError:
-                pass
+                pygame.mixer.Sound(vic_path).play()
+            except pygame.error:
+                print("Nie udało się załadować dźwięku.")
             self.game_over = True
             return
         self.map = Map(self.level)
         self.calculate_offset()
-        center_x, center_y = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(center_x, center_y)]
-        self.player.x, self.player.y = center_x, min(center_y + 2, self.map.size - 1)
+        cx, cy = self.map.size//2, self.map.size//2
+        self.ghosts = [Ghost(cx, cy)]
+        self.player.x, self.player.y = cx, min(cy+2, self.map.size-1)
         self._add_extra_ghosts()
-
     def handle_events(self) -> None:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
@@ -101,6 +109,7 @@ class Game:
                     self.running = False
 
     def update(self) -> None:
+        base_path = os.path.dirname(__file__)
         if self.game_over:
             return
         tile = self.map.grid[self.player.y][self.player.x]
@@ -122,17 +131,18 @@ class Game:
             )
             if collision:
                 try:
-                    pygame.mixer.Sound("../mp3/ouch.mp3").play()
+                    ouch = os.path.abspath(os.path.join(base_path, "..", "mp3", "ouch.mp3"))
+                    pygame.mixer.Sound(ouch).play()
                 except ImportError:
-                    pass
+                    print("Nie udało się załadować dźwięku.")
                 self.player.lives -= 1
                 if self.player.lives <= 0:
                     try:
-                        sound_over = pygame.mixer.Sound("../mp3/game_over.mp3")
+                        sound_over = pygame.mixer.Sound(os.path.abspath(os.path.join(base_path, "..", "mp3", "game_over.mp3")))
                         sound_over.set_volume(0.3)
                         sound_over.play()
                     except ImportError:
-                        pass
+                        print("Nie udało się załadować dźwięku.")
                     self.game_over = True
                     self.time_game_over = now
                 else:

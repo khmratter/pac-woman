@@ -1,17 +1,62 @@
 import pygame
-from map import Map
-from config import TILE_SIZE
+import os
+from .map import Map
+from .config import TILE_SIZE
 
 
 class Player:
+    """
+    Represent a player in the game.
+
+    Initializes the player, defines how the player moves across the map.
+    Generates the player image on the screen.
+
+    Attributes:
+    x (int): current x position of the player
+    y (int): current y position of the player
+    score (int): current score of the player (collected points) (default 0)
+    lives (int): number of player's remaining lives (default 3)
+    direction (str): current facing direction of the player (default "right")
+    base_image (pygame.Surface): the base image used for scaling to fit
+    image (pygame.Surface): scaled image of the player that will be shown on the screen when rendering the player
+
+    Methods:
+    move(dx, dy, map_obj): defines how and where the player can or cannot move across the map
+    draw(screen, offset_x, offset_y): draws the player on the screen
+    """
+
     def __init__(self, x: int, y: int) -> None:
+        """
+        Initialize a player at the current x and y position.
+
+        Creates a player with a loaded and scaled image.
+        Sets initial position, score, live count and direction.
+
+        Arguments:
+        x (int): beginning x position of the player
+        y (int): beginning y position of the player
+
+        Returns: 
+        None
+        """
         self.x = x
         self.y = y
         self.score = 0
         self.lives = 3
         self.direction = "right"
 
-        original_image = pygame.image.load("../img/player.png").convert_alpha()
+        # --- POPRAWIONA ŚCIEŻKA DO OBRAZKA ---
+        # Tworzymy ścieżkę absolutną, aby działała niezależnie od tego, skąd uruchamiany jest skrypt.
+        try:
+            base_path = os.path.dirname(__file__)
+            image_path = os.path.abspath(os.path.join(base_path, "..", "img", "player.png"))
+            original_image = pygame.image.load(image_path).convert_alpha()
+        except pygame.error:
+            # Zabezpieczenie na wypadek, gdyby testy nie miały dostępu do pygame.image
+            # lub gdyby plik nie istniał. Tworzymy pusty obrazek.
+            original_image = pygame.Surface((10,10))
+
+
         original_size = original_image.get_size()
         max_dim = TILE_SIZE - 1
 
@@ -25,6 +70,21 @@ class Player:
         self.image = self.base_image
 
     def move(self, dx: int, dy: int, map_obj: Map) -> None:
+        """
+        Move the player to a new position on the map if possible.
+
+        Checks if new coordinates are within the map and whether there are any walls blocking the player's way.
+        If not, moves the player to a new position.
+        Changes the player's direction accordingly.
+
+        Arguments:
+        dx (int): change in x-coordinate (horizontal coordinate)
+        dy (int): change in y-coordinate (vertical coordinate)
+        map_obj (Map): Map object around which the player is moving with information of the location of walls
+
+        Returns: 
+        None
+        """
         new_x = self.x + dx
         new_y = self.y + dy
 
@@ -52,6 +112,20 @@ class Player:
             self.x, self.y = new_x, new_y
 
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
+        """
+        Draw the player on the screen.
+
+        Renders the player image on the screen at the correctly calculated position.
+        The image is rotated according to the set direction.
+
+        Arguments:
+        screen (pygame.Surface): the game screen (surface) where the player will be drawn
+        offset_x (int): horizontal pixel offset to allocate the player
+        offset_y (int): vertical pixel offset to allocate the player
+
+        Returns: 
+        None
+        """
         directions = {
             "right": lambda png: png,
             "left": lambda png: pygame.transform.flip(png, True, False),
