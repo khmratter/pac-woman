@@ -200,13 +200,6 @@ class Map:
                     continue  # pomijamy pole startowe gracza
                 self.grid[y][x].point = True
 
-    # Na razie pusta – można użyć np. do oznaczenia dostępnych pól
-    def _mark_accessible(self) -> None:
-        """
-        Na razie nic nie rob.
-        """
-        pass
-
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         """
         Draw the entire map on the screen.

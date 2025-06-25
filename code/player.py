@@ -48,8 +48,6 @@ class Player:
         self.lives = 3
         self.direction = "right"
 
-        # --- POPRAWIONA ŚCIEŻKA DO OBRAZKA ---
-        # Tworzymy ścieżkę absolutną, aby działała niezależnie od tego, skąd uruchamiany jest skrypt.
         try:
             base_path = os.path.dirname(__file__)
             image_path = os.path.abspath(
@@ -57,8 +55,6 @@ class Player:
             )
             original_image = pygame.image.load(image_path).convert_alpha()
         except pygame.error:
-            # Zabezpieczenie na wypadek, gdyby testy nie miały dostępu do pygame.image
-            # lub gdyby plik nie istniał. Tworzymy pusty obrazek.
             original_image = pygame.Surface((10, 10))
 
         original_size = original_image.get_size()

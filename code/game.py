@@ -389,12 +389,6 @@ class Game:
 
         pygame.display.flip()
 
-    def handle_game_over(self) -> None:
-        """
-        Na razie pusta.
-        """
-        pass
-
     def reset_game(self) -> None:
         """
         Reset the game to its initial state.
