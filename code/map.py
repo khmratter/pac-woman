@@ -50,7 +50,6 @@ class Map:
         self._add_extra_passages(extra=self.level + 3)
         self._break_long_walls(max_len=3)
         self._place_points()
-        self._mark_accessible()
 
     def _gen_maze(self) -> None:
         """
