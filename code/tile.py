@@ -17,7 +17,7 @@ class Tile:
         wall_right (bool): define whether the right wall exists (default True)
         point (bool): define whether the point in the middle of a tile exists (default False)
 
-        Returns: 
+        Returns:
         None
         """
         self.wall_top = True

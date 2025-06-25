@@ -10,8 +10,8 @@ def main() -> None:
     This method  is not designed to be called like a method from a module.
     Initializes the game until the game is no longer running.
     Limits fps (frames per second) to 60.
-    
-    Returns: 
+
+    Returns:
     None
     """
     game = Game()

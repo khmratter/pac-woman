@@ -17,7 +17,7 @@ class Map:
     Attributes:
     level (int): current level of the game, defines size and game complexity
     size (int): size of a map grid (number of tiles in height and width)
-    grid (list[list[Tile]]):
+    grid (list[list[Tile]]): list representing the tile grid of the map
 
     Methods:
     _gen_maze(): generates a maze using DFS algorithm
@@ -26,6 +26,7 @@ class Map:
     _place_points(): places collectible point on all the tiles
     draw(screen, offset_x, offset_y): draws the map on the screen
     """
+
     def __init__(self, level: int) -> None:
         """
         Initialize the map for a certain level.
@@ -215,7 +216,7 @@ class Map:
         Uses rectangles to draw tiles.
         Uses circles to draw points.
         Uses regular lines to draw walls.
-        
+
         Arguments:
         screen (pygame.Surface): the game screen (surface) where the map will be drawn
         offset_x (int): horizontal pixel offset to properly position the map

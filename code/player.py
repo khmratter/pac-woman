@@ -36,7 +36,10 @@ class Player:
         x (int): beginning x position of the player
         y (int): beginning y position of the player
 
-        Returns: 
+        Raises:
+        pygame.error: if there was a problem with a path to the image file
+
+        Returns:
         None
         """
         self.x = x
@@ -49,13 +52,14 @@ class Player:
         # Tworzymy ścieżkę absolutną, aby działała niezależnie od tego, skąd uruchamiany jest skrypt.
         try:
             base_path = os.path.dirname(__file__)
-            image_path = os.path.abspath(os.path.join(base_path, "..", "img", "player.png"))
+            image_path = os.path.abspath(
+                os.path.join(base_path, "..", "img", "player.png")
+            )
             original_image = pygame.image.load(image_path).convert_alpha()
         except pygame.error:
             # Zabezpieczenie na wypadek, gdyby testy nie miały dostępu do pygame.image
             # lub gdyby plik nie istniał. Tworzymy pusty obrazek.
-            original_image = pygame.Surface((10,10))
-
+            original_image = pygame.Surface((10, 10))
 
         original_size = original_image.get_size()
         max_dim = TILE_SIZE - 1
@@ -82,7 +86,7 @@ class Player:
         dy (int): change in y-coordinate (vertical coordinate)
         map_obj (Map): Map object around which the player is moving with information of the location of walls
 
-        Returns: 
+        Returns:
         None
         """
         new_x = self.x + dx
@@ -123,7 +127,7 @@ class Player:
         offset_x (int): horizontal pixel offset to allocate the player
         offset_y (int): vertical pixel offset to allocate the player
 
-        Returns: 
+        Returns:
         None
         """
         directions = {

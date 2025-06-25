@@ -16,7 +16,7 @@ class Ghost:
     Initializes a ghost with its own superpowers (3 types of ghosts).
     Specifies ghosts' special abilities if any.
     Defines a way of moving around the map.
-    Defines an algorithm of chasing the player. 
+    Defines an algorithm of chasing the player.
     Draws the ghost on the screen.
 
     Attributes:
@@ -33,20 +33,20 @@ class Ghost:
     can_pass_walls(): indicates whether the ghost has the special ability of passing the walls
     move_towards(player, map_obj): algorithm that defines a way in which the ghost moves towards the player
     update_special_state(current_time): updates the state of ghost's special ability based on time activated
-    draw(screen, offset_x, offset_y, map_obj): draws the ghost on the screen 
+    draw(screen, offset_x, offset_y, map_obj): draws the ghost on the screen
     """
+
     def __init__(
         self,
         x: int,
         y: int,
         image_file: str = "duch.png",
-        
         ghost_type: Optional[str] = None,
     ) -> None:
         """
         Initialize a ghost at certain coordinates.
         Creates a ghost object and loads its image.
-        Sets ghost's initial position. 
+        Sets ghost's initial position.
         Sets type of the ghost.
 
         Arguments:
@@ -159,14 +159,14 @@ class Ghost:
             Breadth-First Serach (BFS) algorithm that finds (if possible) the shortest path
             to the player's position from ghost's current position.
             Considers walls blocking the way and ghost's superpower
-            to pass through the walls (if has one). 
+            to pass through the walls (if has one).
 
             Arguments:
             start (tuple[int, int]): starting position of the ghost
             goal (tuple[int, int]): target position of the player
-            
+
             Returns:
-            Optional[list[tuple[int, int]]]: returns a path (a list of tuples) if can be found, 
+            Optional[list[tuple[int, int]]]: returns a path (a list of tuples) if can be found,
             None if can not.
             """
             visited = set()
@@ -244,7 +244,7 @@ class Ghost:
         offset_y (int): vertical pixel offset to allocate the ghost
         map_obj (Map): the map object used to calculate the borders for staying within map size
 
-        Returns: 
+        Returns:
         None
         """
         x_pos = offset_x + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2

@@ -13,16 +13,68 @@ from .config import (
     TILE_SIZE,
 )
 
+
 class Game:
+    """
+    Manage the Pac-Woman game flow.
+
+    Handles the core logic, events, rendering.
+    Encapsulates the main game loop.
+    Illustrates player-ghost interaction.
+    Manages the overall game flow.
+
+    Attributes:
+    level (int): current game level (default 1)
+    ox (int): x offset for centering the map
+    oy (int): y offset for centering the map
+    map (Map): game map generated based on the current level
+    screen (pygame.Surface): display surface where game elements are drawn
+    ghosts (list[Ghost]): list of ghosts included in the game
+    player (Player): main player object controlled by the user
+    clock (pygame.time.Clock): Clock object to manage fps
+    font (pygame.font.Font): text font used for rendering user interface
+    running (bool): indicates whether the game loop is active (default True)
+    game_over (bool): indicates whether the game is over (default False)
+    time_game_over (int): time when the game ended (default 0)
+    victory_image_original (pygame.Surface): player's image shown on victory
+    music (NoneType): background looped music
+
+    Methods:
+    calculate_offset(): calcucates the offsets to place the map in the center
+    _add_extra_ghosts(): adds additional ghosts depending on current level
+    next_level(): upgrades the game level or indicates victory
+    handle_events(): handles user's input when pressing the buttons
+    update(): defines ghosts' behavior, collisions, game over
+    draw_ui(): draws UI on the top of the screen.
+    Showing player's lives, score, current level
+    render(): renders the screen depending on remaining lives and level
+    reset_game(): resets the game to its beginning state for a new game
+    """
+
     def __init__(self) -> None:
+        """
+        Initialize the Pac-Woman game.
+
+        Sets up the first game level. Creates a game map.
+        Initializes the player and ghosts. Sets their positions.
+        Sets the game title, clock, font, states of the game.
+        Loads the resources (images, background music).
+
+        Raises:
+        pygame.error: if there was a problem loading image or music
+        FileNotFoundError: if the image is missing
+
+        Returns:
+        None
+        """
         pygame.init()
         self.level = 1
         self.map = Map(self.level)
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.calculate_offset()
-        cx, cy = self.map.size//2, self.map.size//2
-        self.ghosts = [Ghost(cx, cy)]
-        self.player = Player(cx, min(cy+2, self.map.size-1))
+        center_x, center_y = self.map.size // 2, self.map.size // 2
+        self.ghosts = [Ghost(center_x, center_y)]
+        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))
         self._add_extra_ghosts()
         pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
@@ -33,43 +85,90 @@ class Game:
 
         base_path = os.path.dirname(__file__)
         # load victory image
-        victory_path = os.path.abspath(os.path.join(base_path, "..", "img", "player_win.png"))
+        victory_path = os.path.abspath(
+            os.path.join(base_path, "..", "img", "player_win.png")
+        )
         try:
-            self.victory_image_original = pygame.image.load(victory_path).convert_alpha()
+            self.victory_image_original = pygame.image.load(
+                victory_path
+            ).convert_alpha()
         except (pygame.error, FileNotFoundError):
-            self.victory_image_original = pygame.Surface((100,100))
-            self.victory_image_original.fill((0,255,0))
+            self.victory_image_original = pygame.Surface((100, 100))
+            self.victory_image_original.fill((0, 255, 0))
 
         # load background music
-        music_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "background_music.mp3"))
+        music_path = os.path.abspath(
+            os.path.join(base_path, "..", "mp3", "background_music.mp3")
+        )
         try:
-            pygame.mixer.music.load(music_path)
+            self.music = pygame.mixer.music.load(music_path)
             pygame.mixer.music.play(-1)
         except pygame.error:
             print("Nie udało się załadować muzyki.")
 
     def calculate_offset(self) -> None:
+        """
+        Calculate the offsets to center the map.
+
+        Computes x and y offsets to place the map in the center.
+        Depends on the window size.
+
+        Returns:
+        None
+        """
         ms = self.map.size * TILE_SIZE
-        self.ox = (WINDOW_WIDTH-ms)//2
-        self.oy = (WINDOW_HEIGHT-ms)//2
+        self.ox = (WINDOW_WIDTH - ms) // 2
+        self.oy = (WINDOW_HEIGHT - ms) // 2
 
     def _add_extra_ghosts(self) -> None:
+        """
+        Add additional ghosts at certain levels.
+
+        At levels 3 and up and 5 and up adds extra ghosts of other types.
+        Complicates the game by adding extra ghosts.
+
+        Returns:
+        None
+        """
         if self.level >= 3:
-            self.ghosts.append(Ghost(self.map.size-1, 0, "duch1.png", ghost_type="ghost2"))
+            self.ghosts.append(
+                Ghost(self.map.size - 1, 0, "duch1.png", ghost_type="ghost2")
+            )
         if self.level >= 5:
-            self.ghosts.append(Ghost(self.map.size-2, self.map.size-2, "duch2.png", ghost_type="ghost3"))
+            self.ghosts.append(
+                Ghost(
+                    self.map.size - 2,
+                    self.map.size - 2,
+                    "duch2.png",
+                    ghost_type="ghost3",
+                )
+            )
 
     def next_level(self) -> None:
+        """
+        Upgrate the game to next level.
+
+        When advancing to the next level plays a level-up sound.
+        Resets the player's and ghosts' positions.
+        Indicates the victory when maximum level achieved.
+        Marks the game as over. Plays a victory sound.
+
+        Returns:
+        None
+        """
         base_path = os.path.dirname(__file__)
-        # level up sound
-        lvl_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "level_up.mp3"))
+        lvl_path = os.path.abspath(
+            os.path.join(base_path, "..", "mp3", "level_up.mp3")
+        )  # level up sound
         try:
             pygame.mixer.Sound(lvl_path).play()
         except pygame.error:
             print("Nie udało się załadować dźwięku.")
         self.level += 1
         if self.level > MAX_LEVEL:
-            vic_path = os.path.abspath(os.path.join(base_path, "..", "mp3", "victory.mp3"))
+            vic_path = os.path.abspath(
+                os.path.join(base_path, "..", "mp3", "victory.mp3")
+            )
             try:
                 pygame.mixer.Sound(vic_path).play()
             except pygame.error:
@@ -78,11 +177,23 @@ class Game:
             return
         self.map = Map(self.level)
         self.calculate_offset()
-        cx, cy = self.map.size//2, self.map.size//2
+        cx, cy = self.map.size // 2, self.map.size // 2
         self.ghosts = [Ghost(cx, cy)]
-        self.player.x, self.player.y = cx, min(cy+2, self.map.size-1)
+        self.player.x, self.player.y = cx, min(cy + 2, self.map.size - 1)
         self._add_extra_ghosts()
+
     def handle_events(self) -> None:
+        """
+        Handle user's input.
+
+        Operates keybord presses. Spacebar for skipping the level.
+        Arrow keys for proceeding player's movement.
+        Handles mouse clicks on the buttons at the end of the game.
+        Defines whether to restart or quit the game.
+
+        Returns:
+        None
+        """
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 self.running = False
@@ -109,6 +220,21 @@ class Game:
                     self.running = False
 
     def update(self) -> None:
+        """
+        Update state of the game.
+
+        Advances the game to the next level when all the points are collected.
+        Determines the ghosts' movement towards the player.
+        Checks for collisions. Plays a sound if collision happend.
+        Handles the player's lives and game over conditions.
+        Plays a sound when lost all the lives and the game ends.
+
+        Raises:
+        ImportError: if there was a problem loading the music
+
+        Returns:
+        None
+        """
         base_path = os.path.dirname(__file__)
         if self.game_over:
             return
@@ -131,14 +257,20 @@ class Game:
             )
             if collision:
                 try:
-                    ouch = os.path.abspath(os.path.join(base_path, "..", "mp3", "ouch.mp3"))
+                    ouch = os.path.abspath(
+                        os.path.join(base_path, "..", "mp3", "ouch.mp3")
+                    )
                     pygame.mixer.Sound(ouch).play()
                 except ImportError:
                     print("Nie udało się załadować dźwięku.")
                 self.player.lives -= 1
                 if self.player.lives <= 0:
                     try:
-                        sound_over = pygame.mixer.Sound(os.path.abspath(os.path.join(base_path, "..", "mp3", "game_over.mp3")))
+                        sound_over = pygame.mixer.Sound(
+                            os.path.abspath(
+                                os.path.join(base_path, "..", "mp3", "game_over.mp3")
+                            )
+                        )
                         sound_over.set_volume(0.3)
                         sound_over.play()
                     except ImportError:
@@ -153,6 +285,15 @@ class Game:
                     self.player.x, self.player.y = curr_x, curr_y
 
     def draw_ui(self) -> None:
+        """
+        Draw UI on top of the screen.
+
+        Renders user interface (UI).
+        Displays player's remaining lives, current score and level.
+
+        Returns:
+        None
+        """
         txt = self.font.render(
             f"Punkty: {self.player.score}  Życia: {self.player.lives}  Poziom: {self.level}",
             True,
@@ -161,6 +302,19 @@ class Game:
         self.screen.blit(txt, (10, 10))
 
     def render(self) -> None:
+        """
+        Render the screen depanding on the current level.
+
+        Draws the entire game frame.
+        If the game is over, draw the game over screen with buttons.
+        Game over screen can show either voctory of failure.
+        Renders the quit and restart buttons.
+        If the game continues,
+        draws a new game screen with the map, ghosts, player.
+
+        Returns:
+        None
+        """
         self.screen.fill(SCREEN_COLOR)
 
         if self.game_over:
@@ -209,7 +363,7 @@ class Game:
             )
             pygame.draw.rect(self.screen, (200, 0, 0), self.quit_btn, border_radius=12)
 
-            restart_txt = self.font.render("Restart", True, (255, 255, 255))
+            restart_txt = self.font.render("Restartuj", True, (255, 255, 255))
             quit_txt = self.font.render("Zakończ", True, (255, 255, 255))
 
             self.screen.blit(
@@ -236,9 +390,22 @@ class Game:
         pygame.display.flip()
 
     def handle_game_over(self) -> None:
+        """
+        Na razie pusta.
+        """
         pass
 
     def reset_game(self) -> None:
+        """
+        Reset the game to its initial state.
+
+        Resets the game to default settings.
+        Resets the map, the ghosts, the player.
+        Used when the user clicks reset button.
+
+        Returns:
+        None
+        """
         self.level = 1
         self.map = Map(self.level)
         self.calculate_offset()
