@@ -51,11 +51,11 @@ class Player:
         try:
             base_path = os.path.dirname(__file__)
             image_path = os.path.abspath(
-                os.path.join(base_path, "..", "img", "player.png")
+                os.path.join(base_path, "..", "img", "player.png")          # Return absolute path for the player's image
             )
             original_image = pygame.image.load(image_path).convert_alpha()
         except pygame.error:
-            original_image = pygame.Surface((10, 10))
+            original_image = pygame.Surface((10, 10))           # If the image doesn't exist create empty one
 
         original_size = original_image.get_size()
         max_dim = TILE_SIZE - 1
@@ -66,7 +66,7 @@ class Player:
             int(original_size[1] * scale_ratio),
         )
 
-        self.base_image = pygame.transform.smoothscale(original_image, new_size)
+        self.base_image = pygame.transform.smoothscale(original_image, new_size)        # Scale the image to fit the cell
         self.image = self.base_image
 
     def move(self, dx: int, dy: int, map_obj: Map) -> None:
@@ -94,9 +94,9 @@ class Player:
             (0, -1): "up",
             (0, 1): "down",
         }
-        self.direction = diff_to_text.get((dx, dy))
+        self.direction = diff_to_text.get((dx, dy))         # Update the players direction
 
-        if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:
+        if 0 <= new_x < map_obj.size and 0 <= new_y < map_obj.size:         # Make sure a new position is within the map
             current = map_obj.grid[self.y][self.x]
             target = map_obj.grid[new_y][new_x]
             walls_blocking = {
@@ -105,9 +105,9 @@ class Player:
                 (0, -1): ("wall_top", "wall_bottom"),
                 (0, 1): ("wall_bottom", "wall_top"),
             }
-            walls = walls_blocking.get((dx, dy))
+            walls = walls_blocking.get((dx, dy))         # Get the pair direction-blocking walls
             current_wall, target_wall = walls
-            if getattr(current, current_wall) or getattr(target, target_wall):
+            if getattr(current, current_wall) or getattr(target, target_wall):         # Check if any walls block current or target tile
                 return
             self.x, self.y = new_x, new_y
 
@@ -132,7 +132,7 @@ class Player:
             "up": lambda png: pygame.transform.rotate(png, 90),
             "down": lambda png: pygame.transform.rotate(png, -90),
         }
-        image = directions[self.direction](self.base_image)
+        image = directions[self.direction](self.base_image)         # Rotate the image according to the new direction
 
         image_rect = image.get_rect()
         x_pos = offset_x + self.x * TILE_SIZE + (TILE_SIZE - image_rect.width) // 2

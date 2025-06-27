@@ -73,8 +73,8 @@ class Game:
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.calculate_offset()
         center_x, center_y = self.map.size // 2, self.map.size // 2
-        self.ghosts = [Ghost(center_x, center_y)]
-        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))
+        self.ghosts = [Ghost(center_x, center_y)]           # Initialize ghost's starting position
+        self.player = Player(center_x, min(center_y + 2, self.map.size - 1))          # Initialize player's starting position
         self._add_extra_ghosts()
         pygame.display.set_caption("PacWoman OOP")
         self.clock = pygame.time.Clock()
@@ -84,24 +84,22 @@ class Game:
         self.time_game_over = 0
 
         base_path = os.path.dirname(__file__)
-        # load victory image
         victory_path = os.path.abspath(
-            os.path.join(base_path, "..", "img", "player_win.png")
+            os.path.join(base_path, "..", "img", "player_win.png")          # Return absolute path for player's victory image
         )
         try:
-            self.victory_image_original = pygame.image.load(
+            self.victory_image_original = pygame.image.load(            # Load victory image if possible
                 victory_path
             ).convert_alpha()
         except (pygame.error, FileNotFoundError):
             self.victory_image_original = pygame.Surface((100, 100))
             self.victory_image_original.fill((0, 255, 0))
 
-        # load background music
         music_path = os.path.abspath(
-            os.path.join(base_path, "..", "mp3", "background_music.mp3")
+            os.path.join(base_path, "..", "mp3", "background_music.mp3")          # Return absolute path for background music
         )
         try:
-            self.music = pygame.mixer.music.load(music_path)
+            self.music = pygame.mixer.music.load(music_path)         # Load background music if possible
             pygame.mixer.music.play(-1)
         except pygame.error:
             print("Nie udało się załadować muzyki.")
@@ -116,7 +114,7 @@ class Game:
         Returns:
         None
         """
-        ms = self.map.size * TILE_SIZE
+        ms = self.map.size * TILE_SIZE          # Calculate map size in pixels
         self.ox = (WINDOW_WIDTH - ms) // 2
         self.oy = (WINDOW_HEIGHT - ms) // 2
 
@@ -158,24 +156,24 @@ class Game:
         """
         base_path = os.path.dirname(__file__)
         lvl_path = os.path.abspath(
-            os.path.join(base_path, "..", "mp3", "level_up.mp3")
-        )  # level up sound
+            os.path.join(base_path, "..", "mp3", "level_up.mp3")          # Return absolute path for level up sound
+        ) 
         try:
-            pygame.mixer.Sound(lvl_path).play()
+            pygame.mixer.Sound(lvl_path).play()          # Load level up sound if possible
         except pygame.error:
             print("Nie udało się załadować dźwięku.")
         self.level += 1
         if self.level > MAX_LEVEL:
             vic_path = os.path.abspath(
-                os.path.join(base_path, "..", "mp3", "victory.mp3")
+                os.path.join(base_path, "..", "mp3", "victory.mp3")         # Return absolute path for victory sound
             )
             try:
-                pygame.mixer.Sound(vic_path).play()
+                pygame.mixer.Sound(vic_path).play()             # Load victory sound if possible
             except pygame.error:
                 print("Nie udało się załadować dźwięku.")
             self.game_over = True
             return
-        self.map = Map(self.level)
+        self.map = Map(self.level)          # Render next level of the game
         self.calculate_offset()
         cx, cy = self.map.size // 2, self.map.size // 2
         self.ghosts = [Ghost(cx, cy)]
@@ -238,9 +236,9 @@ class Game:
         base_path = os.path.dirname(__file__)
         if self.game_over:
             return
-        tile = self.map.grid[self.player.y][self.player.x]
+        tile = self.map.grid[self.player.y][self.player.x]      
         if tile.point:
-            self.player.score += 1
+            self.player.score += 1          # Collect the point if standing on one
             tile.point = False
         if not any(tile.point for row in self.map.grid for tile in row):
             self.next_level()
@@ -258,17 +256,17 @@ class Game:
             if collision:
                 try:
                     ouch = os.path.abspath(
-                        os.path.join(base_path, "..", "mp3", "ouch.mp3")
+                        os.path.join(base_path, "..", "mp3", "ouch.mp3")            # Return absolute path for collision sound
                     )
-                    pygame.mixer.Sound(ouch).play()
+                    pygame.mixer.Sound(ouch).play()             # Load collision sound if possible
                 except ImportError:
                     print("Nie udało się załadować dźwięku.")
                 self.player.lives -= 1
                 if self.player.lives <= 0:
                     try:
-                        sound_over = pygame.mixer.Sound(
+                        sound_over = pygame.mixer.Sound(                # Load game over sound if possible
                             os.path.abspath(
-                                os.path.join(base_path, "..", "mp3", "game_over.mp3")
+                                os.path.join(base_path, "..", "mp3", "game_over.mp3")           # Return absolute path for game over sound
                             )
                         )
                         sound_over.set_volume(0.3)
@@ -282,7 +280,7 @@ class Game:
                         self.map.size // 2,
                         min(self.map.size // 2 + 2, self.map.size - 1),
                     )
-                    self.player.x, self.player.y = curr_x, curr_y
+                    self.player.x, self.player.y = curr_x, curr_y           # Reset the player's position to the starting one after losing a life
 
     def draw_ui(self) -> None:
         """
@@ -318,7 +316,7 @@ class Game:
         self.screen.fill(SCREEN_COLOR)
 
         if self.game_over:
-            if self.level > MAX_LEVEL and self.player.lives > 0:
+            if self.level > MAX_LEVEL and self.player.lives > 0:            
                 scale_factor = 0.20
                 new_width = int(WINDOW_WIDTH * scale_factor)
 
@@ -335,7 +333,7 @@ class Game:
                 img_rect = scaled_image.get_rect(
                     center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50)
                 )
-                self.screen.blit(scaled_image, img_rect)
+                self.screen.blit(scaled_image, img_rect)                # Draw victory screen
 
                 victory_text = self.font.render("ZWYCIĘSTWO!", True, (0, 255, 0))
                 text_x = (WINDOW_WIDTH - victory_text.get_width()) // 2
@@ -343,7 +341,7 @@ class Game:
                 self.screen.blit(victory_text, (text_x, text_y))
             elif self.game_over:
                 game_over_text = self.font.render("KONIEC GRY!", True, (255, 50, 50))
-                self.screen.blit(
+                self.screen.blit(                                       # Draw game over screen
                     game_over_text,
                     (
                         (WINDOW_WIDTH - game_over_text.get_width()) // 2,
@@ -359,9 +357,9 @@ class Game:
             )
 
             pygame.draw.rect(
-                self.screen, (255, 105, 180), self.restart_btn, border_radius=12
+                self.screen, (255, 105, 180), self.restart_btn, border_radius=12        # Draw a restart button
             )
-            pygame.draw.rect(self.screen, (200, 0, 0), self.quit_btn, border_radius=12)
+            pygame.draw.rect(self.screen, (200, 0, 0), self.quit_btn, border_radius=12)         # Draw a quit button
 
             restart_txt = self.font.render("Restartuj", True, (255, 255, 255))
             quit_txt = self.font.render("Zakończ", True, (255, 255, 255))
@@ -381,7 +379,7 @@ class Game:
                 ),
             )
         else:
-            self.map.draw(self.screen, self.ox, self.oy)
+            self.map.draw(self.screen, self.ox, self.oy)            # Draw next game level
             for ghost in self.ghosts:
                 ghost.draw(self.screen, self.ox, self.oy, self.map)
             self.player.draw(self.screen, self.ox, self.oy)

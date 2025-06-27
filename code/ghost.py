@@ -61,12 +61,12 @@ class Ghost:
         self.x = x
         self.y = y
         base_path = os.path.dirname(__file__)
-        image_path = os.path.abspath(os.path.join(base_path, "..", "img", image_file))
+        image_path = os.path.abspath(os.path.join(base_path, "..", "img", image_file))          # Return absolute path for the ghost's image
         self.image = pygame.image.load(image_path).convert_alpha()
 
         margin = 8
         size = TILE_SIZE - margin
-        self.image = pygame.transform.smoothscale(self.image, (size, size))
+        self.image = pygame.transform.smoothscale(self.image, (size, size))         # Resize the image to fit the cell
         self.image_size = size
 
         self.last_move = time.time()
@@ -103,7 +103,7 @@ class Ghost:
         """
         now = time.time()
         speed_delay = (
-            0.25 if self.special_active and self.ghost_type == "ghost1" else 0.5
+            0.25 if self.special_active and self.ghost_type == "ghost1" else 0.5         # Speed up the Ghost1 if superpower is active
         )
         if now - self.last_move < speed_delay:
             return
@@ -127,7 +127,7 @@ class Ghost:
             Returns:
             Bool
             """
-            if not (0 <= x2 < map_obj.size and 0 <= y2 < map_obj.size):
+            if not (0 <= x2 < map_obj.size and 0 <= y2 < map_obj.size):         # Ensure the move is within the map
                 return False
             if self.can_pass_walls():
                 return True
@@ -143,10 +143,10 @@ class Ghost:
                 (0, 1): ("wall_bottom", "wall_top"),
                 (0, -1): ("wall_top", "wall_bottom"),
             }
-            walls = walls_blocking.get((diff_x, diff_y))
+            walls = walls_blocking.get((diff_x, diff_y))         # Get the pair direction-blocking walls
 
             current_wall, target_wall = walls
-            if getattr(curr, current_wall) or getattr(targ, target_wall):
+            if getattr(curr, current_wall) or getattr(targ, target_wall):           # Check if any walls block current or target tile
                 return False
             return True
 
@@ -170,19 +170,19 @@ class Ghost:
             None if can not.
             """
             visited = set()
-            queue = deque()
+            queue = deque()         # Initialize BFS queue
             queue.append((start, []))
 
-            while queue:
+            while queue:            # Explore while there are positions in the queue
                 (current_x, current_y), path = queue.popleft()
-                if (current_x, current_y) in visited:
+                if (current_x, current_y) in visited:         # Skip the position if already visited
                     continue
                 visited.add((current_x, current_y))
 
                 if (current_x, current_y) == goal:
                     return path
 
-                for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:          # Explore all the directions
                     new_x, new_y = current_x + dx, current_y + dy
                     if (new_x, new_y) not in visited and can(
                         current_x, current_y, new_x, new_y
@@ -192,19 +192,19 @@ class Ghost:
 
         path = bfs_path((self.x, self.y), (player.x, player.y))
 
-        if path and len(path) <= 3:
+        if path and len(path) <= 3:         # Follow the player if the player is close enough
             next_x, next_y = path[0]
             self.x, self.y = next_x, next_y
             return
 
-        if path and random.random() < 0.4:
+        if path and random.random() < 0.4:          # Follow the player with 40% chance if not so close
             next_x, next_y = path[0]
             self.x, self.y = next_x, next_y
             return
 
         dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         random.shuffle(dirs)
-        for dest_x, dest_y in dirs:
+        for dest_x, dest_y in dirs:         # If the player is far from the ghost move randomly
             nx, ny = self.x + dest_x, self.y + dest_y
             if can(self.x, self.y, nx, ny):
                 self.x, self.y = nx, ny
@@ -225,7 +225,7 @@ class Ghost:
         """
         if self.special_active and current_time - self.special_start_time >= 3:
             self.special_active = False
-        elif not self.special_active and int(current_time) % 10 == 0:
+        elif not self.special_active and int(current_time) % 10 == 0:        # Activate special state every 10 seconds
             self.special_active = True
             self.special_start_time = current_time
 
@@ -250,14 +250,14 @@ class Ghost:
         x_pos = offset_x + self.x * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
         y_pos = offset_y + self.y * TILE_SIZE + (TILE_SIZE - self.image_size) // 2
 
-        if self.special_active and self.ghost_type == "ghost3":
+        if self.special_active and self.ghost_type == "ghost3":         # Draw Ghost3 on 4 tiles when superpower is active  
             map_width = len(map_obj.grid[0])
             map_height = len(map_obj.grid)
             for delta_x in range(2):
                 for delta_y in range(2):
                     big_x = self.x + delta_x
                     big_y = self.y + delta_y
-                    if big_x < map_width and big_y < map_height:
+                    if big_x < map_width and big_y < map_height:         # Prevent from drawing Ghost3 outside the map when superpower is active
                         screen_x = (
                             offset_x
                             + big_x * TILE_SIZE

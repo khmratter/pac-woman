@@ -45,7 +45,7 @@ class Map:
         """
         self.level = level
         self.size = 5 + level - 1
-        self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]
+        self.grid = [[Tile() for _ in range(self.size)] for _ in range(self.size)]          # Map consists of tiles
         self._gen_maze()
         self._add_extra_passages(extra=self.level + 3)
         self._break_long_walls(max_len=3)
@@ -65,7 +65,7 @@ class Map:
         for y in range(size):
             for x in range(size):
                 t = self.grid[y][x]
-                t.wall_top = t.wall_bottom = t.wall_left = t.wall_right = True
+                t.wall_top = t.wall_bottom = t.wall_left = t.wall_right = True          # Create a grid of tiles with the walls on all sides
 
         dirs = [
             ("top", 0, -1, "bottom"),
@@ -73,7 +73,7 @@ class Map:
             ("left", -1, 0, "right"),
             ("right", 1, 0, "left"),
         ]
-        visited = [[False] * size for _ in range(size)]
+        visited = [[False] * size for _ in range(size)]         # Track visited tiles for creatinf the maze
 
         def dfs(x: int, y: int) -> None:
             """
@@ -92,7 +92,7 @@ class Map:
             visited[y][x] = True
             dir_order = dirs[:]
             random.shuffle(dir_order)
-            for wall, dx, dy, opposite_wall in dir_order:
+            for wall, dx, dy, opposite_wall in dir_order:           # DFS algorithm to carve out the paths randomly
                 steps = random.randint(1, 3)
                 current_x, current_y = x, y
                 for _ in range(steps):
@@ -102,7 +102,7 @@ class Map:
                         and 0 <= new_y < size
                         and not visited[new_y][new_x]
                     ):
-                        setattr(self.grid[current_y][current_x], f"wall_{wall}", False)
+                        setattr(self.grid[current_y][current_x], f"wall_{wall}", False)         # Remove the walls between current and next tiles
                         setattr(self.grid[new_y][new_x], f"wall_{opposite_wall}", False)
                         visited[new_y][new_x] = True
                         dfs(new_x, new_y)
@@ -127,17 +127,17 @@ class Map:
         """
         count = 0
         size = self.size
-        while count < extra:
+        while count < extra:        # Randomly add extra passages
             x = random.randint(0, size - 2)
             y = random.randint(0, size - 2)
             tile1 = self.grid[y][x]
-            if random.choice([True, False]):
+            if random.choice([True, False]):           # Remove the horizontal wall
                 tile2 = self.grid[y][x + 1]
                 if tile1.wall_right and tile2.wall_left:
                     tile1.wall_right = False
                     tile2.wall_left = False
                     count += 1
-            else:
+            else:                                      # Remove the vertical wall
                 tile2 = self.grid[y + 1][x]
                 if tile1.wall_bottom and tile2.wall_top:
                     tile1.wall_bottom = False
@@ -161,10 +161,10 @@ class Map:
         for y in range(self.size):
             count = 0
             for x in range(self.size - 1):
-                if self.grid[y][x].wall_right and self.grid[y][x + 1].wall_left:
+                if self.grid[y][x].wall_right and self.grid[y][x + 1].wall_left:        # Count the number of horizontally connected walls 
                     count += 1
                     if count >= max_len:
-                        self.grid[y][x].wall_right = False
+                        self.grid[y][x].wall_right = False              # Break the wall
                         self.grid[y][x + 1].wall_left = False
                         count = 0
                 else:
@@ -172,10 +172,10 @@ class Map:
         for x in range(self.size):
             count = 0
             for y in range(self.size - 1):
-                if self.grid[y][x].wall_bottom and self.grid[y + 1][x].wall_top:
+                if self.grid[y][x].wall_bottom and self.grid[y + 1][x].wall_top:        # Count the number of vertically connected walls
                     count += 1
                     if count >= max_len:
-                        self.grid[y][x].wall_bottom = False
+                        self.grid[y][x].wall_bottom = False             # Break the wall
                         self.grid[y + 1][x].wall_top = False
                         count = 0
                 else:
@@ -196,7 +196,7 @@ class Map:
         for y in range(self.size):
             for x in range(self.size):
                 if (x, y) == (start_x, start_y):
-                    continue  # pomijamy pole startowe gracza
+                    continue                         # Skip the player's starting tile
                 self.grid[y][x].point = True
 
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
@@ -224,7 +224,7 @@ class Map:
                 pygame.draw.rect(
                     screen, TILE_COLOR, (tile_x, tile_y, TILE_SIZE, TILE_SIZE)
                 )
-                if tile.point:
+                if tile.point:          # Draw the point
                     pygame.draw.circle(
                         screen,
                         POINT_COLOR,
@@ -252,4 +252,4 @@ class Map:
 
                 for wall_position, coord in walls:
                     if getattr(tile, wall_position):
-                        pygame.draw.line(screen, WALL_COLOR, coord[0], coord[1], 2)
+                        pygame.draw.line(screen, WALL_COLOR, coord[0], coord[1], 2)         # Draw the existing walls

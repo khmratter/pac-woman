@@ -19,7 +19,7 @@ def main() -> None:
         game.handle_events()
         game.update()
         game.render()
-        game.clock.tick(60)  # 60 fps
+        game.clock.tick(60)         # 60 fps
     pygame.quit()
 
 
